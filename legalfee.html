@@ -354,19 +354,12 @@
                 <div class="form-section">
                     <div class="section-label">是否需要财产保全</div>
                     <div class="options-grid grid-2">
-                        <button class="option-btn" id="preservationNo" onclick="setPreservation(false, this)">
-                            <span>不需要</span>
-                        </button>
-                        <button class="option-btn active" id="preservationYes" onclick="setPreservation(true, this)">
+                        <button class="option-btn" id="preservationYes" onclick="setPreservation(true, this)">
                             <span>需要</span>
                         </button>
-                    </div>
-                </div>
-                <div class="form-section" id="preservationAmountSection">
-                    <div class="section-label">保全财产数额</div>
-                    <div class="input-wrapper">
-                        <input type="number" class="input-field" id="preservationAmount" placeholder="0" min="0" step="0.01" oninput="calculateFee()">
-                        <span class="input-suffix">万元</span>
+                        <button class="option-btn active" id="preservationNo" onclick="setPreservation(false, this)">
+                            <span>不需要</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -394,19 +387,12 @@
                 <div class="form-section">
                     <div class="section-label">是否需要财产保全</div>
                     <div class="options-grid grid-2">
-                        <button class="option-btn" id="divorcePreservationNo" onclick="setDivorcePreservation(false, this)">
-                            <span>不需要</span>
-                        </button>
-                        <button class="option-btn active" id="divorcePreservationYes" onclick="setDivorcePreservation(true, this)">
+                        <button class="option-btn" id="divorcePreservationYes" onclick="setDivorcePreservation(true, this)">
                             <span>需要</span>
                         </button>
-                    </div>
-                </div>
-                <div class="form-section" id="divorcePreservationAmountSection">
-                    <div class="section-label">保全财产数额</div>
-                    <div class="input-wrapper">
-                        <input type="number" class="input-field" id="divorcePreservationAmount" placeholder="0" min="0" step="0.01" oninput="calculateFee()">
-                        <span class="input-suffix">万元</span>
+                        <button class="option-btn active" id="divorcePreservationNo" onclick="setDivorcePreservation(false, this)">
+                            <span>不需要</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -433,9 +419,9 @@
 
     <script>
         let currentType = 'property';
-        let divorceHasSplit = true;
-        let needPreservation = true;
-        let divorceNeedPreservation = true;
+        let divorceHasSplit = false;
+        let needPreservation = false;
+        let divorceNeedPreservation = false;
 
         // 选择案件类型
         function selectType(type, btn) {
@@ -450,28 +436,12 @@
             if (type === 'property') {
                 propertyInput.classList.remove('hidden');
                 divorceInput.classList.add('hidden');
-                // 自动填充保全金额为标的金额
-                syncPreservationAmount();
                 calculateFee();
             } else {
                 propertyInput.classList.add('hidden');
                 divorceInput.classList.remove('hidden');
-                // 自动填充保全金额为财产总额
-                syncDivorcePreservationAmount();
                 calculateFee();
             }
-        }
-
-        // 同步保全金额与标的金额（财产案件）
-        function syncPreservationAmount() {
-            const amount = document.getElementById('propertyAmount').value;
-            document.getElementById('preservationAmount').value = amount || '';
-        }
-
-        // 同步保全金额与财产总额（离婚案件）
-        function syncDivorcePreservationAmount() {
-            const amount = document.getElementById('divorceAmount').value;
-            document.getElementById('divorcePreservationAmount').value = amount || '';
         }
 
         // 设置财产保全（财产案件）
@@ -479,14 +449,6 @@
             needPreservation = need;
             document.getElementById('preservationNo').classList.toggle('active', !need);
             document.getElementById('preservationYes').classList.toggle('active', need);
-
-            const section = document.getElementById('preservationAmountSection');
-            if (need) {
-                section.classList.remove('hidden');
-                syncPreservationAmount();
-            } else {
-                section.classList.add('hidden');
-            }
             calculateFee();
         }
 
@@ -495,14 +457,6 @@
             divorceNeedPreservation = need;
             document.getElementById('divorcePreservationNo').classList.toggle('active', !need);
             document.getElementById('divorcePreservationYes').classList.toggle('active', need);
-
-            const section = document.getElementById('divorcePreservationAmountSection');
-            if (need) {
-                section.classList.remove('hidden');
-                syncDivorcePreservationAmount();
-            } else {
-                section.classList.add('hidden');
-            }
             calculateFee();
         }
 
@@ -596,11 +550,10 @@
                 fee = calculatePropertyFee(amount);
                 detail = `标的额：${amount}万元`;
 
-                // 计算财产保全费
+                // 计算财产保全费（使用标的金额）
                 if (needPreservation) {
-                    const preservationAmount = parseFloat(document.getElementById('preservationAmount').value) || 0;
-                    preservationFee = calculatePreservationFee(preservationAmount);
-                    preservationDetail = `保全财产：${preservationAmount}万元`;
+                    preservationFee = calculatePreservationFee(amount);
+                    preservationDetail = `保全财产：${amount}万元`;
                 }
 
             } else {
@@ -621,11 +574,10 @@
                     detail = `财产总额：${amount}万元`;
                 }
 
-                // 计算财产保全费
+                // 计算财产保全费（使用财产总额）
                 if (divorceNeedPreservation) {
-                    const preservationAmount = parseFloat(document.getElementById('divorcePreservationAmount').value) || 0;
-                    preservationFee = calculatePreservationFee(preservationAmount);
-                    preservationDetail = `保全财产：${preservationAmount}万元`;
+                    preservationFee = calculatePreservationFee(amount);
+                    preservationDetail = `保全财产：${amount}万元`;
                 }
             }
 
