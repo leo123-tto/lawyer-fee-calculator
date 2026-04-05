@@ -628,9 +628,13 @@
             } else {
                 // 离婚案件
                 if (!divorceHasSplit) {
-                    // 不涉及财产分割，固定 200 元
-                    fee = 200;
-                    detail = '不涉及财产分割';
+                    // 不涉及财产分割，每件交纳 50-300 元
+                    document.getElementById('feeResult').textContent = '50-300 元';
+                    document.getElementById('feeDetail').textContent = '不涉及财产分割';
+
+                    // 隐藏保全费行
+                    document.getElementById('preservationFeeRow').classList.add('hidden');
+                    return;
                 } else {
                     const amount = parseFloat(document.getElementById('divorceAmount').value) || 0;
                     fee = calculateDivorceFee(amount);
