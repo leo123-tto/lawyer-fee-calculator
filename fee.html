@@ -109,6 +109,12 @@
 
         .back-link:hover {
             background: rgba(30, 64, 175, 0.15);
+            transform: translateX(-2px);
+        }
+
+        .back-link:active {
+            transform: translateX(0);
+            background: rgba(30, 64, 175, 0.2);
         }
 
         /* 主卡片 */
@@ -437,7 +443,7 @@
     <div class="container">
         <!-- 头部 -->
         <div class="header">
-            <a href="index.html" class="back-link" style="position: absolute; top: -10px; left: 0; font-size: 13px; color: var(--accent); text-decoration: none; padding: 8px 12px; background: rgba(30, 64, 175, 0.08); border-radius: 20px;">← 返回主页</a>
+            <a href="index.html" class="back-link">← 返回主页</a>
             <span class="header-icon">⚖️</span>
             <h1>律师费报价方案</h1>
             <p>江苏漫修（无锡）律师事务所 · 刘成律师</p>
