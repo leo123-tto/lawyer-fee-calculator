@@ -191,6 +191,21 @@
 
         .input-wrapper {
             position: relative;
+            display: flex;
+            gap: 8px;
+        }
+
+        .input-wrapper .input-field {
+            flex: 1;
+        }
+
+        .input-field.date-part {
+            flex: 0 0 70px;
+            text-align: center;
+        }
+
+        .input-field.date-part.year {
+            flex: 0 0 90px;
         }
 
         .input-field {
@@ -310,7 +325,6 @@
 
         .input-field[type="number"] {
             -moz-appearance: textfield;
-            padding-right: 50px;
         }
 
         @media (max-width: 480px) {
@@ -322,6 +336,16 @@
             .options-grid.grid-2 { gap: 8px; }
             .option-btn { padding: 14px 10px; font-size: 14px; }
             .option-btn .icon { font-size: 20px; }
+            .input-field {
+                font-size: 16px;
+                padding: 14px 10px;
+            }
+            .input-field.date-part {
+                flex: 0 0 60px;
+            }
+            .input-field.date-part.year {
+                flex: 0 0 75px;
+            }
         }
     </style>
 </head>
@@ -358,13 +382,17 @@
                 <div class="form-section">
                     <div class="section-label">开始日期</div>
                     <div class="input-wrapper">
-                        <input type="date" class="input-field" id="intervalStartDate" onchange="calculateInterval()">
+                        <input type="number" class="input-field date-part year" id="intervalStartYear" placeholder="年" min="1900" max="9999" oninput="handleDateInput(this, 'month')" maxlength="4">
+                        <input type="number" class="input-field date-part" id="intervalStartMonth" placeholder="月" min="1" max="12" oninput="handleDateInput(this, 'day')" maxlength="2">
+                        <input type="number" class="input-field date-part" id="intervalStartDay" placeholder="日" min="1" max="31" oninput="calculateInterval()" maxlength="2">
                     </div>
                 </div>
                 <div class="form-section">
                     <div class="section-label">结束日期</div>
                     <div class="input-wrapper">
-                        <input type="date" class="input-field" id="intervalEndDate" onchange="calculateInterval()">
+                        <input type="number" class="input-field date-part year" id="intervalEndYear" placeholder="年" min="1900" max="9999" oninput="handleDateInput(this, 'month')" maxlength="4">
+                        <input type="number" class="input-field date-part" id="intervalEndMonth" placeholder="月" min="1" max="12" oninput="handleDateInput(this, 'day')" maxlength="2">
+                        <input type="number" class="input-field date-part" id="intervalEndDay" placeholder="日" min="1" max="31" oninput="calculateInterval()" maxlength="2">
                     </div>
                 </div>
             </div>
@@ -374,7 +402,9 @@
                 <div class="form-section">
                     <div class="section-label">起始日期</div>
                     <div class="input-wrapper">
-                        <input type="date" class="input-field" id="calcStartDate" onchange="calculateDate()">
+                        <input type="number" class="input-field date-part year" id="calcStartYear" placeholder="年" min="1900" max="9999" oninput="handleDateInput(this, 'month')" maxlength="4">
+                        <input type="number" class="input-field date-part" id="calcStartMonth" placeholder="月" min="1" max="12" oninput="handleDateInput(this, 'day')" maxlength="2">
+                        <input type="number" class="input-field date-part" id="calcStartDay" placeholder="日" min="1" max="31" oninput="calculateDate()" maxlength="2">
                     </div>
                 </div>
                 <div class="form-section">
@@ -408,6 +438,37 @@
     <script>
         let currentMode = 'interval';
 
+        // 处理日期输入自动跳转
+        function handleDateInput(input, nextField) {
+            const val = input.value;
+            const maxLen = input.maxLength;
+
+            if (val.length >= maxLen) {
+                // 根据 placeholder 找到下一个输入框
+                const wrapper = input.closest('.input-wrapper');
+                const nextInput = wrapper.querySelector(`[placeholder="${nextField}"]`);
+                if (nextInput) {
+                    nextInput.focus();
+                    nextInput.select();
+                }
+            }
+        }
+
+        // 从三个输入框构建日期字符串
+        function getDateFromParts(yearId, monthId, dayId) {
+            const year = document.getElementById(yearId).value;
+            const month = document.getElementById(monthId).value;
+            const day = document.getElementById(dayId).value;
+
+            if (!year || !month || !day) return null;
+
+            // 填充零
+            const paddedMonth = String(month).padStart(2, '0');
+            const paddedDay = String(day).padStart(2, '0');
+
+            return `${year}-${paddedMonth}-${paddedDay}`;
+        }
+
         // 选择模式
         function selectMode(mode, btn) {
             currentMode = mode;
@@ -434,8 +495,8 @@
 
         // 计算间隔天数
         function calculateInterval() {
-            const startDate = document.getElementById('intervalStartDate').value;
-            const endDate = document.getElementById('intervalEndDate').value;
+            const startDate = getDateFromParts('intervalStartYear', 'intervalStartMonth', 'intervalStartDay');
+            const endDate = getDateFromParts('intervalEndYear', 'intervalEndMonth', 'intervalEndDay');
 
             if (!startDate || !endDate) {
                 document.getElementById('resultValue').textContent = '--';
@@ -457,7 +518,7 @@
 
         // 计算日期推算
         function calculateDate() {
-            const startDate = document.getElementById('calcStartDate').value;
+            const startDate = getDateFromParts('calcStartYear', 'calcStartMonth', 'calcStartDay');
             const days = parseInt(document.getElementById('calcDays').value) || 0;
 
             if (!startDate) {
