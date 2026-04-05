@@ -318,9 +318,9 @@
     <div class="container">
         <!-- 头部 -->
         <div class="header">
-            <span class="header-icon">⚖️</span>
+            <span class="header-icon">🏛️</span>
             <h1>诉讼费计算器</h1>
-            <p>依据《诉讼费用交纳办法》</p>
+            <p style="text-align: center;">依据《诉讼费用交纳办法》</p>
         </div>
 
         <!-- 主卡片 -->
@@ -560,13 +560,6 @@
                 // 离婚案件
                 const amount = parseFloat(document.getElementById('divorceAmount').value) || 0;
 
-                if (amount <= 0 && !divorceHasSplit) {
-                    document.getElementById('feeResult').textContent = '--';
-                    document.getElementById('feeDetail').textContent = '--';
-                    document.getElementById('preservationFeeRow').classList.add('hidden');
-                    return;
-                }
-
                 fee = calculateDivorceFee(amount);
                 if (divorceHasSplit && amount > 20) {
                     detail = `财产总额：${amount}万元（含财产分割）`;
@@ -575,7 +568,7 @@
                 }
 
                 // 计算财产保全费（使用财产总额）
-                if (divorceNeedPreservation) {
+                if (divorceNeedPreservation && amount > 0) {
                     preservationFee = calculatePreservationFee(amount);
                     preservationDetail = `保全财产：${amount}万元`;
                 }
