@@ -192,20 +192,18 @@
         .input-wrapper {
             position: relative;
             display: flex;
-            gap: 8px;
+            gap: 10px;
+            width: 100%;
         }
 
         .input-wrapper .input-field {
-            flex: 1;
+            width: 100%;
         }
 
         .input-field.date-part {
-            flex: 0 0 70px;
+            flex: 1;
+            min-width: 0;
             text-align: center;
-        }
-
-        .input-field.date-part.year {
-            flex: 0 0 90px;
         }
 
         .input-field {
@@ -341,10 +339,7 @@
                 padding: 14px 10px;
             }
             .input-field.date-part {
-                flex: 0 0 60px;
-            }
-            .input-field.date-part.year {
-                flex: 0 0 75px;
+                min-width: 0;
             }
         }
     </style>
@@ -382,17 +377,17 @@
                 <div class="form-section">
                     <div class="section-label">开始日期</div>
                     <div class="input-wrapper">
-                        <input type="number" class="input-field date-part year" id="intervalStartYear" placeholder="年" min="1900" max="9999" oninput="handleDateInput(this, 'month')" maxlength="4">
-                        <input type="number" class="input-field date-part" id="intervalStartMonth" placeholder="月" min="1" max="12" oninput="handleDateInput(this, 'day')" maxlength="2">
-                        <input type="number" class="input-field date-part" id="intervalStartDay" placeholder="日" min="1" max="31" oninput="calculateInterval()" maxlength="2">
+                        <input type="number" class="input-field date-part" id="intervalStartYear" placeholder="年" min="1900" max="9999" oninput="handleDateInput(this, 'month')">
+                        <input type="number" class="input-field date-part" id="intervalStartMonth" placeholder="月" min="1" max="12" oninput="handleDateInput(this, 'day')">
+                        <input type="number" class="input-field date-part" id="intervalStartDay" placeholder="日" min="1" max="31" oninput="calculateInterval()">
                     </div>
                 </div>
                 <div class="form-section">
                     <div class="section-label">结束日期</div>
                     <div class="input-wrapper">
-                        <input type="number" class="input-field date-part year" id="intervalEndYear" placeholder="年" min="1900" max="9999" oninput="handleDateInput(this, 'month')" maxlength="4">
-                        <input type="number" class="input-field date-part" id="intervalEndMonth" placeholder="月" min="1" max="12" oninput="handleDateInput(this, 'day')" maxlength="2">
-                        <input type="number" class="input-field date-part" id="intervalEndDay" placeholder="日" min="1" max="31" oninput="calculateInterval()" maxlength="2">
+                        <input type="number" class="input-field date-part" id="intervalEndYear" placeholder="年" min="1900" max="9999" oninput="handleDateInput(this, 'month')">
+                        <input type="number" class="input-field date-part" id="intervalEndMonth" placeholder="月" min="1" max="12" oninput="handleDateInput(this, 'day')">
+                        <input type="number" class="input-field date-part" id="intervalEndDay" placeholder="日" min="1" max="31" oninput="calculateInterval()">
                     </div>
                 </div>
             </div>
@@ -402,9 +397,9 @@
                 <div class="form-section">
                     <div class="section-label">起始日期</div>
                     <div class="input-wrapper">
-                        <input type="number" class="input-field date-part year" id="calcStartYear" placeholder="年" min="1900" max="9999" oninput="handleDateInput(this, 'month')" maxlength="4">
-                        <input type="number" class="input-field date-part" id="calcStartMonth" placeholder="月" min="1" max="12" oninput="handleDateInput(this, 'day')" maxlength="2">
-                        <input type="number" class="input-field date-part" id="calcStartDay" placeholder="日" min="1" max="31" oninput="calculateDate()" maxlength="2">
+                        <input type="number" class="input-field date-part" id="calcStartYear" placeholder="年" min="1900" max="9999" oninput="handleDateInput(this, 'month')">
+                        <input type="number" class="input-field date-part" id="calcStartMonth" placeholder="月" min="1" max="12" oninput="handleDateInput(this, 'day')">
+                        <input type="number" class="input-field date-part" id="calcStartDay" placeholder="日" min="1" max="31" oninput="calculateDate()">
                     </div>
                 </div>
                 <div class="form-section">
@@ -441,9 +436,17 @@
         // 处理日期输入自动跳转
         function handleDateInput(input, nextField) {
             const val = input.value;
-            const maxLen = input.maxLength;
+            // 限制输入长度
+            const isYear = input.placeholder === '年';
+            const maxLen = isYear ? 4 : 2;
 
-            if (val.length >= maxLen) {
+            // 限制只能输入指定长度
+            if (val.length > maxLen) {
+                input.value = val.slice(0, maxLen);
+            }
+
+            // 年份输入满 4 位或月份输入满 2 位且有效时自动跳转
+            if ((isYear && val.length === 4) || (!isYear && val.length === 2 && parseInt(val) > 0)) {
                 // 根据 placeholder 找到下一个输入框
                 const wrapper = input.closest('.input-wrapper');
                 const nextInput = wrapper.querySelector(`[placeholder="${nextField}"]`);
