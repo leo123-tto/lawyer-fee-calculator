@@ -489,7 +489,7 @@
             }
 
             if (!input || input === '0' || input === '0.00' || input === '.') {
-                document.getElementById('resultValue').textContent = '零元整';
+                document.getElementById('resultValue').textContent = '零圆整';
                 document.getElementById('resultHint').textContent = '输入数字后实时转换';
                 return;
             }
@@ -546,7 +546,7 @@
             let needZero = false;
 
             if (integer === 0) {
-                return '零元整';
+                return '零圆整';
             }
 
             while (integer > 0) {
@@ -612,7 +612,7 @@
                 decimalStr = '整';
             }
 
-            return result + '元' + decimalStr;
+            return result + '圆' + decimalStr;
         }
 
         // 数字转中文读法
