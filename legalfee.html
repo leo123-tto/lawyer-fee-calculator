@@ -328,7 +328,7 @@
             <!-- 案件类型 -->
             <div class="form-section">
                 <div class="section-label">案件类型</div>
-                <div class="options-grid grid-2">
+                <div class="options-grid grid-3">
                     <button class="option-btn type-btn active" onclick="selectType('property', this)">
                         <span class="icon">💰</span>
                         <span>财产案件</span>
@@ -338,6 +338,11 @@
                         <span class="icon">💑</span>
                         <span>离婚案件</span>
                         <span class="desc">基础费 + 财产分割</span>
+                    </button>
+                    <button class="option-btn type-btn" onclick="selectType('preservation', this)">
+                        <span class="icon">🔒</span>
+                        <span>财产保全</span>
+                        <span class="desc">最高 5000 元</span>
                     </button>
                 </div>
             </div>
@@ -375,6 +380,17 @@
                 </div>
             </div>
 
+            <!-- 财产保全输入 -->
+            <div id="preservationCaseInput" class="hidden">
+                <div class="form-section">
+                    <div class="section-label">保全财产数额</div>
+                    <div class="input-wrapper">
+                        <input type="number" class="input-field" id="preservationAmount" placeholder="0" min="0" step="0.01" oninput="calculateFee()">
+                        <span class="input-suffix">万元</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- 结果区域 -->
             <div class="result-section show" id="resultSection">
                 <div class="result-card">
@@ -402,14 +418,22 @@
 
             const propertyInput = document.getElementById('propertyCaseInput');
             const divorceInput = document.getElementById('divorceCaseInput');
+            const preservationInput = document.getElementById('preservationCaseInput');
 
             if (type === 'property') {
                 propertyInput.classList.remove('hidden');
                 divorceInput.classList.add('hidden');
+                preservationInput.classList.add('hidden');
+                calculateFee();
+            } else if (type === 'divorce') {
+                propertyInput.classList.add('hidden');
+                divorceInput.classList.remove('hidden');
+                preservationInput.classList.add('hidden');
                 calculateFee();
             } else {
                 propertyInput.classList.add('hidden');
-                divorceInput.classList.remove('hidden');
+                divorceInput.classList.add('hidden');
+                preservationInput.classList.remove('hidden');
                 calculateFee();
             }
         }
@@ -420,6 +444,23 @@
             document.getElementById('splitNo').classList.toggle('active', !hasSplit);
             document.getElementById('splitYes').classList.toggle('active', hasSplit);
             calculateFee();
+        }
+
+        // 计算财产保全费
+        function calculatePreservationFee(amountWan) {
+            const amount = amountWan * 10000; // 转换为元
+            let fee = 0;
+
+            if (amount <= 1000) {
+                fee = 30;
+            } else if (amount <= 100000) {
+                fee = 30 + (amount - 1000) * 0.01;
+            } else {
+                fee = 30 + (100000 - 1000) * 0.01 + (amount - 100000) * 0.005;
+            }
+
+            // 最高不超过 5000 元
+            return Math.min(Math.round(fee), 5000);
         }
 
         // 计算财产案件诉讼费（分段累计）
@@ -484,7 +525,7 @@
                 fee = calculatePropertyFee(amount);
                 detail = `标的额：${amount}万元`;
 
-            } else {
+            } else if (currentType === 'divorce') {
                 const amount = parseFloat(document.getElementById('divorceAmount').value) || 0;
 
                 if (amount <= 0 && !divorceHasSplit) {
@@ -499,6 +540,19 @@
                 } else {
                     detail = `财产总额：${amount}万元`;
                 }
+
+            } else {
+                // 财产保全
+                const amount = parseFloat(document.getElementById('preservationAmount').value) || 0;
+
+                if (amount <= 0) {
+                    document.getElementById('feeResult').textContent = '--';
+                    document.getElementById('feeDetail').textContent = '--';
+                    return;
+                }
+
+                fee = calculatePreservationFee(amount);
+                detail = `保全财产：${amount}万元`;
             }
 
             // 格式化结果
