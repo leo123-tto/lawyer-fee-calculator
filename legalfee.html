@@ -414,45 +414,50 @@
     </div>
 
     <!-- 底部信息 -->
-    <div style="text-align: center; margin-top: 24px; margin-bottom: 16px;">
+    <div style="text-align: center; margin-top: 24px; margin-bottom: 24px;">
         <p style="font-size: 14px; font-weight: 600; color: var(--text-primary);">江苏漫修（无锡）律师事务所 刘成律师</p>
     </div>
 
-    <!-- 诉讼费用交纳办法 折叠面板 -->
-    <div class="card" style="margin-top: 16px; padding: 0; overflow: hidden;">
-        <div onclick="toggleRegulations()" style="padding: 16px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: rgba(30, 64, 175, 0.05);" id="regulationsHeader">
-            <span style="font-size: 13px; font-weight: 600; color: var(--accent);">📜 《诉讼费用交纳办法》</span>
-            <span id="regulationsIcon" style="font-size: 18px; transition: transform 0.3s ease;">▼</span>
-        </div>
-        <div id="regulationsContent" class="hidden" style="padding: 0 20px 16px; max-height: 400px; overflow-y: auto;">
-            <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.8;">
-                <p style="margin-bottom: 10px;"><strong>第三条</strong> 在人民法院进行诉讼，依照本办法规定交纳诉讼费用。</p>
-                <p style="margin-bottom: 10px;"><strong>第六条</strong> 当事人应当向人民法院交纳的诉讼费用包括：<br/>（一）案件受理费；<br/>（二）申请费。</p>
-                <p style="margin-bottom: 10px;"><strong>第十三条</strong> 案件受理费分别按照下列标准交纳：<br/>
-                <strong>（一）财产案件</strong> 根据诉讼请求的金额或者价额，按照下列比例分段累计交纳：<br/>
-                1. 不超过 1 万元的，每件交纳 50 元；<br/>
-                2. 超过 1 万元至 10 万元的部分，按照 2.5% 交纳；<br/>
-                3. 超过 10 万元至 20 万元的部分，按照 2% 交纳；<br/>
-                4. 超过 20 万元至 50 万元的部分，按照 1.5% 交纳；<br/>
-                5. 超过 50 万元至 100 万元的部分，按照 1% 交纳；<br/>
-                6. 超过 100 万元至 200 万元的部分，按照 0.9% 交纳；<br/>
-                7. 超过 200 万元至 500 万元的部分，按照 0.8% 交纳；<br/>
-                8. 超过 500 万元至 1000 万元的部分，按照 0.7% 交纳；<br/>
-                9. 超过 1000 万元至 2000 万元的部分，按照 0.6% 交纳；<br/>
-                10. 超过 2000 万元的部分，按照 0.5% 交纳。</p>
-                <p style="margin-bottom: 10px;"><strong>（二）离婚案件</strong> 每件交纳 50 元至 300 元。涉及财产分割，财产总额不超过 20 万元的，不另行交纳；超过 20 万元的部分，按照 0.5% 交纳。</p>
-                <p style="margin-bottom: 10px;"><strong>第十四条</strong> 申请费按照下列标准交纳：<br/>
-                <strong>（二）申请保全措施的</strong> 根据实际保全的财产数额按照下列标准交纳：<br/>
-                1. 财产数额不超过 1000 元或者不涉及财产数额的，每件交纳 30 元；<br/>
-                2. 超过 1000 元至 10 万元的部分，按照 1% 交纳；<br/>
-                3. 超过 10 万元的部分，按照 0.5% 交纳。<br/>
-                但是，当事人申请保全措施交纳的费用最多不超过 5000 元。</p>
-            </div>
-        </div>
+    <!-- 可点击的法规链接 -->
+    <div style="text-align: center; margin-bottom: 24px;">
+        <p onclick="toggleRegulations()" style="font-size: 14px; color: var(--accent); cursor: pointer; display: inline-block; padding: 8px 16px; border-radius: 20px; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(30, 64, 175, 0.08)'" onmouseout="this.style.background='transparent'">
+            📜 依据《诉讼费用交纳办法》
+        </p>
     </div>
 
-    <div style="text-align: center; margin-bottom: 16px;">
-        <p style="font-size: 12px; color: var(--text-tertiary);">依据《诉讼费用交纳办法》</p>
+    <!-- 法规内容弹窗 -->
+    <div id="regulationsModal" onclick="toggleRegulations()" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px;">
+        <div onclick="event.stopPropagation()" style="background: white; border-radius: 20px; max-width: 480px; width: 100%; max-height: 70vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);">
+            <div style="padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: white; border-radius: 20px 20px 0 0;">
+                <h3 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0;">📜 诉讼费用交纳办法</h3>
+                <button onclick="toggleRegulations()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-tertiary); padding: 0; line-height: 1;">×</button>
+            </div>
+            <div style="padding: 20px 24px;">
+                <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.8;">
+                    <p style="margin-bottom: 12px;"><strong>第三条</strong> 在人民法院进行诉讼，依照本办法规定交纳诉讼费用。</p>
+                    <p style="margin-bottom: 12px;"><strong>第六条</strong> 当事人应当向人民法院交纳的诉讼费用包括：<br/>（一）案件受理费；<br/>（二）申请费。</p>
+                    <p style="margin-bottom: 12px;"><strong>第十三条</strong> 案件受理费分别按照下列标准交纳：<br/>
+                    <strong>（一）财产案件</strong> 根据诉讼请求的金额或者价额，按照下列比例分段累计交纳：<br/>
+                    1. 不超过 1 万元的，每件交纳 50 元；<br/>
+                    2. 超过 1 万元至 10 万元的部分，按照 2.5% 交纳；<br/>
+                    3. 超过 10 万元至 20 万元的部分，按照 2% 交纳；<br/>
+                    4. 超过 20 万元至 50 万元的部分，按照 1.5% 交纳；<br/>
+                    5. 超过 50 万元至 100 万元的部分，按照 1% 交纳；<br/>
+                    6. 超过 100 万元至 200 万元的部分，按照 0.9% 交纳；<br/>
+                    7. 超过 200 万元至 500 万元的部分，按照 0.8% 交纳；<br/>
+                    8. 超过 500 万元至 1000 万元的部分，按照 0.7% 交纳；<br/>
+                    9. 超过 1000 万元至 2000 万元的部分，按照 0.6% 交纳；<br/>
+                    10. 超过 2000 万元的部分，按照 0.5% 交纳。</p>
+                    <p style="margin-bottom: 12px;"><strong>（二）离婚案件</strong> 每件交纳 50 元至 300 元。涉及财产分割，财产总额不超过 20 万元的，不另行交纳；超过 20 万元的部分，按照 0.5% 交纳。</p>
+                    <p style="margin-bottom: 12px;"><strong>第十四条</strong> 申请费按照下列标准交纳：<br/>
+                    <strong>（二）申请保全措施的</strong> 根据实际保全的财产数额按照下列标准交纳：<br/>
+                    1. 财产数额不超过 1000 元或者不涉及财产数额的，每件交纳 30 元；<br/>
+                    2. 超过 1000 元至 10 万元的部分，按照 1% 交纳；<br/>
+                    3. 超过 10 万元的部分，按照 0.5% 交纳。<br/>
+                    但是，当事人申请保全措施交纳的费用最多不超过 5000 元。</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- 提示框 -->
@@ -651,12 +656,16 @@
             setTimeout(() => toast.classList.remove('show'), 2000);
         }
 
-        // 切换法规展开/收起
+        // 切换法规弹窗
         function toggleRegulations() {
-            const content = document.getElementById('regulationsContent');
-            const icon = document.getElementById('regulationsIcon');
-            content.classList.toggle('hidden');
-            icon.style.transform = content.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+            const modal = document.getElementById('regulationsModal');
+            modal.classList.toggle('hidden');
+            // 防止背景滚动
+            if (!modal.classList.contains('hidden')) {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
+            }
         }
     </script>
 </body>
