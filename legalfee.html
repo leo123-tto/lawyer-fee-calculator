@@ -347,7 +347,7 @@
                 <div class="form-section">
                     <div class="section-label">诉讼标的额</div>
                     <div class="input-wrapper">
-                        <input type="number" class="input-field" id="propertyAmount" placeholder="0" min="0" step="0.01" oninput="syncPreservationAmount(); calculateFee()">
+                        <input type="number" class="input-field" id="propertyAmount" placeholder="0" min="0" step="0.01" oninput="calculateFee()">
                         <span class="input-suffix">万元</span>
                     </div>
                 </div>
@@ -369,18 +369,18 @@
                 <div class="form-section">
                     <div class="section-label">财产总额</div>
                     <div class="input-wrapper">
-                        <input type="number" class="input-field" id="divorceAmount" placeholder="0" min="0" step="0.01" oninput="syncDivorcePreservationAmount(); calculateFee()">
+                        <input type="number" class="input-field" id="divorceAmount" placeholder="0" min="0" step="0.01" oninput="calculateFee()">
                         <span class="input-suffix">万元</span>
                     </div>
                 </div>
                 <div class="form-section">
                     <div class="section-label">是否涉及财产分割</div>
                     <div class="options-grid grid-2">
-                        <button class="option-btn" id="splitNo" onclick="setSplit(false, this)">
-                            <span>不涉及</span>
-                        </button>
-                        <button class="option-btn active" id="splitYes" onclick="setSplit(true, this)">
+                        <button class="option-btn" id="splitYes" onclick="setSplit(true, this)">
                             <span>涉及</span>
+                        </button>
+                        <button class="option-btn active" id="splitNo" onclick="setSplit(false, this)">
+                            <span>不涉及</span>
                         </button>
                     </div>
                 </div>
