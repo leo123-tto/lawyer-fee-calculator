@@ -75,6 +75,7 @@ const Game = {
         this.loadImages();
         this.loadSavedData();
         this.bindEvents();
+        AudioManager.init();
     },
 
     // 加载图片资源
@@ -147,6 +148,12 @@ const Game = {
         document.getElementById('continue-btn').addEventListener('click', () => this.continueDriving());
         document.getElementById('exit-btn').addEventListener('click', () => this.goHome());
 
+        // 音量控制
+        document.getElementById('sound-toggle').addEventListener('click', () => {
+            const muted = AudioManager.toggleMute();
+            document.getElementById('sound-toggle').textContent = muted ? '🔇' : '🔊';
+        });
+
         // 键盘事件
         document.addEventListener('keydown', (e) => this.handleKeyDown(e));
 
@@ -175,10 +182,17 @@ const Game = {
     changeLane(direction) {
         if (!this.state.running || this.state.paused) return;
 
+        let changed = false;
         if (direction === -1 && this.state.targetLane > 0) {
             this.state.targetLane--;
+            changed = true;
         } else if (direction === 1 && this.state.targetLane < 2) {
             this.state.targetLane++;
+            changed = true;
+        }
+
+        if (changed) {
+            AudioManager.playLaneChange();
         }
     },
 
@@ -201,6 +215,7 @@ const Game = {
 
     // 返回首页
     goHome() {
+        AudioManager.stopEngine();
         document.getElementById('game-over-panel').style.display = 'none';
         document.getElementById('quiz-panel').style.display = 'none';
         document.getElementById('junction-panel').style.display = 'none';
@@ -208,6 +223,7 @@ const Game = {
         document.getElementById('refuel-success').style.display = 'none';
         document.getElementById('in-game-exit').style.display = 'none';
         document.getElementById('touch-controls').style.display = 'none';
+        document.getElementById('sound-control').style.display = 'none';
         document.getElementById('start-screen').style.display = 'flex';
         this.state.running = false;
         this.state.paused = false;
@@ -217,6 +233,7 @@ const Game = {
     start() {
         document.getElementById('start-screen').style.display = 'none';
         document.getElementById('in-game-exit').style.display = 'block';
+        document.getElementById('sound-control').style.display = 'block';
 
         // 在移动设备上显示触屏控制
         if (window.innerWidth <= 600) {
@@ -238,6 +255,7 @@ const Game = {
         this.state.npcSpawnTimer = 0;
         this.car.y = this.lanes.yPositions[1];
         this.applyCarStats();
+        AudioManager.startEngine();
         this.gameLoop();
     },
 
@@ -657,6 +675,7 @@ const Game = {
             this.state.correctAnswers++;
             this.state.lastAnswerCorrect = true;
 
+            AudioManager.playCorrect();
             document.getElementById('quiz-result').innerHTML = '回答正确！可以加油补给';
             document.getElementById('quiz-result').style.color = '#4CAF50';
             document.getElementById('refuel-btn').style.display = 'inline-block';
@@ -667,6 +686,7 @@ const Game = {
             options[correct].classList.add('correct');
             this.state.lastAnswerCorrect = false;
 
+            AudioManager.playWrong();
             const correctAnswer = this.state.lastQuiz.options[correct];
             document.getElementById('quiz-result').innerHTML = `回答错误！正确答案是：${correctAnswer}`;
             document.getElementById('quiz-result').style.color = '#F44336';
@@ -682,6 +702,7 @@ const Game = {
         this.state.fuel = this.state.maxFuel;
         this.state.waitingForRefuel = false;
 
+        AudioManager.playRefuel();
         document.getElementById('refuel-success').style.display = 'block';
         setTimeout(() => {
             document.getElementById('refuel-success').style.display = 'none';
@@ -760,11 +781,14 @@ const Game = {
         if (reason === 'collision') {
             title = '发生碰撞！';
             message = '注意躲避其他车辆';
+            AudioManager.playCollision();
         } else {
             title = '油量耗尽！';
             message = '记得在服务区加油哦';
+            AudioManager.playGameOver();
         }
 
+        AudioManager.stopEngine();
         document.getElementById('game-over-title').textContent = title;
         document.getElementById('final-distance').textContent = Math.floor(this.state.distance);
         document.getElementById('final-score').textContent = this.state.score;
