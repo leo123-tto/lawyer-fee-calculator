@@ -1,12 +1,17 @@
-// UI渲染模块
+// UI渲染模块 - 竖屏版
 const UI = {
+    // 更新积分榜
+    updateLeaderboard() {
+        const highScore = Storage.getHighScore();
+        document.getElementById('high-score-value').textContent = highScore;
+    },
+
     // 更新状态栏
     updateStatus(state) {
         document.getElementById('distance').textContent = Math.floor(state.distance);
         document.getElementById('score').textContent = state.score;
         document.getElementById('fuel').textContent = Math.floor(state.fuel);
         document.getElementById('tank-capacity').textContent = state.maxFuel;
-        document.getElementById('current-car').textContent = state.currentCar;
 
         const fuelPercent = (state.fuel / state.maxFuel) * 100;
         const fuelBar = document.getElementById('fuel-bar');
@@ -24,9 +29,7 @@ const UI = {
 
         document.getElementById('env-time').textContent = env.timeOfDay;
         document.getElementById('env-weather').textContent = weatherIcons[env.weather] + ' ' + weatherNames[env.weather];
-
-        const node = ROAD_NETWORK_DATA.nodes[Game.state.currentCity];
-        document.getElementById('env-city').textContent = node ? node.desc : '江南水乡';
+        document.getElementById('env-city').textContent = env.region;
     },
 
     // 打开车库
@@ -56,35 +59,51 @@ const UI = {
                 if (carName === Game.state.currentCar) {
                     option.classList.add('selected');
                 }
+            } else {
+                option.classList.add('locked');
+            }
 
-                const previewBox = document.createElement('div');
-                previewBox.className = 'car-preview-box';
+            // 图片预览框
+            const previewBox = document.createElement('div');
+            previewBox.className = 'car-preview-box';
 
-                // 显示车辆名称和描述
-                const infoDiv = document.createElement('div');
-                infoDiv.className = 'car-info';
+            if (carData.asset) {
+                const img = document.createElement('img');
+                img.src = 'assets/' + carData.asset;
+                img.alt = carName;
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'contain';
+                previewBox.appendChild(img);
+
+                if (!unlocked) {
+                    const lockOverlay = document.createElement('div');
+                    lockOverlay.className = 'car-lock-overlay';
+                    lockOverlay.innerHTML = '🔒';
+                    previewBox.appendChild(lockOverlay);
+                }
+            }
+
+            // 车辆信息
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'car-info';
+
+            if (unlocked) {
                 infoDiv.innerHTML = `
                     <div class="car-name">${carName}</div>
                     <div class="car-stats">油箱:${carData.tank}L | 油耗:1升跑${carData.consumption}公里</div>
                     <div class="car-desc">${carData.desc}</div>
                 `;
-
-                option.appendChild(previewBox);
-                option.appendChild(infoDiv);
                 option.onclick = () => Game.selectCar(carName);
             } else {
-                option.classList.add('locked');
-                option.innerHTML = `
-                    <div class="car-preview" style="background:#666">
-                        <div style="color:#999;font-size:20px;">🔒</div>
-                    </div>
-                    <div class="car-info">
-                        <div class="car-name">${carName}</div>
-                        <div class="car-unlock">需要 ${carData.unlockScore} 积分解锁（当前: ${Game.state.totalScore}）</div>
-                    </div>
+                infoDiv.innerHTML = `
+                    <div class="car-name">${carName}</div>
+                    <div class="car-unlock">需要 ${carData.unlockScore} 积分解锁</div>
                 `;
             }
 
+            option.appendChild(previewBox);
+            option.appendChild(infoDiv);
             carList.appendChild(option);
         });
     }

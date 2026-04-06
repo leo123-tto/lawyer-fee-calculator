@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>中国高速自驾游</title>
+    <title>中国高速自驾游 - 竖屏版</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -15,16 +15,47 @@
             <div id="start-screen">
                 <div id="start-title">中国高速自驾游</div>
                 <div id="start-subtitle">从无锡出发，探索全国高速公路网</div>
+                <!-- 积分榜 -->
+                <div id="leaderboard">
+                    <div id="leaderboard-title">🏆 积分榜</div>
+                    <div id="high-score">最高积分: <span id="high-score-value">0</span></div>
+                </div>
                 <div id="start-buttons">
                     <button id="start-btn" class="pixel-btn">开始旅程</button>
                     <button id="garage-btn" class="pixel-btn btn-orange">选择车辆</button>
                 </div>
             </div>
 
-            <!-- 触屏控制按钮 -->
-            <div id="touch-controls">
-                <button id="touch-up" class="touch-btn">▲</button>
-                <button id="touch-down" class="touch-btn">▼</button>
+            <!-- 游戏引导页 -->
+            <div id="guide-panel">
+                <div id="guide-title">游戏说明</div>
+                <div id="guide-content">
+                    <div class="guide-item">
+                        <span class="guide-icon">🎯</span>
+                        <span class="guide-text">目标：驾驶车辆在高速公路上行驶，探索全国路网</span>
+                    </div>
+                    <div class="guide-item">
+                        <span class="guide-icon">🎮</span>
+                        <span class="guide-text">操作：在屏幕上滑动控制车辆上下左右移动</span>
+                    </div>
+                    <div class="guide-item">
+                        <span class="guide-icon">⛽</span>
+                        <span class="guide-text">服务区：道路右侧出现服务区时，将车移到右侧车道即可触发答题加油</span>
+                    </div>
+                    <div class="guide-item">
+                        <span class="guide-icon">🔀</span>
+                        <span class="guide-text">岔道：行驶过程中会出现岔道选择，选择不同方向前往不同城市</span>
+                    </div>
+                    <div class="guide-item">
+                        <span class="guide-icon">🚗</span>
+                        <span class="guide-text">躲避车辆：注意前方车辆，及时变道躲避</span>
+                    </div>
+                    <div class="guide-item">
+                        <span class="guide-icon">❌</span>
+                        <span class="guide-text">注意：油量耗尽或撞车则游戏结束</span>
+                    </div>
+                </div>
+                <button id="guide-start-btn" class="pixel-btn">开始游戏</button>
             </div>
 
             <!-- 音量控制 -->
@@ -34,7 +65,7 @@
 
             <!-- 游戏中的退出按钮 -->
             <div id="in-game-exit">
-                <button id="exit-btn" class="pixel-btn btn-red btn-small">退出游戏</button>
+                <button id="exit-btn" class="pixel-btn btn-red btn-small">退出</button>
             </div>
 
             <!-- 状态栏 -->
@@ -42,7 +73,6 @@
                 <div class="status-item">里程: <span class="status-value" id="distance">0</span> km</div>
                 <div class="status-item">油量: <span class="status-value" id="fuel">60</span>/<span id="tank-capacity">60</span> L</div>
                 <div class="status-item">积分: <span class="status-value" id="score">0</span></div>
-                <div class="status-item">车辆: <span class="status-value" id="current-car">灰色五菱之光</span></div>
             </div>
 
             <!-- 油量条 -->
@@ -116,7 +146,6 @@
     <!-- 核心文件 -->
     <script src="js/storage.js"></script>
     <script src="js/audio.js"></script>
-    <script src="js/car.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/game.js"></script>
 

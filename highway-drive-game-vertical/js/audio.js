@@ -1,9 +1,7 @@
-// 音效管理模块
+// 音效管理模块 - 简化版，只保留关键事件音效
 const AudioManager = {
     // 音效文件
     sounds: {
-        engine: null,
-        laneChange: null,
         correct: null,
         wrong: null,
         refuel: null,
@@ -13,12 +11,10 @@ const AudioManager = {
 
     // 音量设置 (0-1)
     volumes: {
-        engine: 0.15,
-        laneChange: 0.3,
-        correct: 0.5,
-        wrong: 0.4,
-        refuel: 0.35,
-        collision: 0.6,
+        correct: 0.4,
+        wrong: 0.3,
+        refuel: 0.3,
+        collision: 0.5,
         gameOver: 0.4
     },
 
@@ -28,14 +24,6 @@ const AudioManager = {
     // 初始化
     init() {
         const basePath = 'assets/audio/';
-
-        // 创建音频对象
-        this.sounds.engine = new Audio(basePath + 'engine.wav');
-        this.sounds.engine.loop = true;
-        this.sounds.engine.volume = this.volumes.engine;
-
-        this.sounds.laneChange = new Audio(basePath + 'lane_change.wav');
-        this.sounds.laneChange.volume = this.volumes.laneChange;
 
         this.sounds.correct = new Audio(basePath + 'correct.wav');
         this.sounds.correct.volume = this.volumes.correct;
@@ -53,24 +41,14 @@ const AudioManager = {
         this.sounds.gameOver.volume = this.volumes.gameOver;
     },
 
-    // 播放引擎声（循环背景音）
+    // 播放引擎声（已移除）
     startEngine() {
-        if (this.muted) return;
-        this.sounds.engine.currentTime = 0;
-        this.sounds.engine.play().catch(() => {});
+        // 不再播放引擎背景音
     },
 
-    // 停止引擎声
+    // 停止引擎声（已移除）
     stopEngine() {
-        this.sounds.engine.pause();
-        this.sounds.engine.currentTime = 0;
-    },
-
-    // 播放车道切换音效
-    playLaneChange() {
-        if (this.muted) return;
-        this.sounds.laneChange.currentTime = 0;
-        this.sounds.laneChange.play().catch(() => {});
+        // 不需要停止
     },
 
     // 播放正确答案音效
@@ -104,7 +82,6 @@ const AudioManager = {
     // 播放游戏结束音效
     playGameOver() {
         if (this.muted) return;
-        this.stopEngine();
         this.sounds.gameOver.currentTime = 0;
         this.sounds.gameOver.play().catch(() => {});
     },
@@ -112,9 +89,6 @@ const AudioManager = {
     // 切换静音
     toggleMute() {
         this.muted = !this.muted;
-        if (this.muted) {
-            this.stopEngine();
-        }
         return this.muted;
     },
 
