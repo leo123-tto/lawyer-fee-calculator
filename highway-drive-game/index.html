@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>中国高速自驾游</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+
+        <div id="ui-layer">
+            <!-- 开始界面 -->
+            <div id="start-screen">
+                <div id="start-title">中国高速自驾游</div>
+                <div id="start-subtitle">从无锡出发，探索全国高速公路网</div>
+                <div id="start-buttons">
+                    <button id="start-btn" class="pixel-btn">开始旅程</button>
+                    <button id="garage-btn" class="pixel-btn btn-orange">选择车辆</button>
+                </div>
+            </div>
+
+            <!-- 游戏中的退出按钮 -->
+            <div id="in-game-exit">
+                <button id="exit-btn" class="pixel-btn btn-red btn-small">退出游戏</button>
+            </div>
+
+            <!-- 状态栏 -->
+            <div id="status-bar">
+                <div class="status-item">里程: <span class="status-value" id="distance">0</span> km</div>
+                <div class="status-item">油量: <span class="status-value" id="fuel">60</span>/<span id="tank-capacity">60</span> L</div>
+                <div class="status-item">积分: <span class="status-value" id="score">0</span></div>
+                <div class="status-item">车辆: <span class="status-value" id="current-car">灰色五菱之光</span></div>
+            </div>
+
+            <!-- 油量条 -->
+            <div id="fuel-bar-container">
+                <div id="fuel-bar"></div>
+            </div>
+
+            <!-- 环境信息 -->
+            <div id="env-info">
+                <span id="env-time">清晨</span>
+                <span id="env-weather">晴天</span>
+                <span id="env-city">江南水乡</span>
+            </div>
+
+            <!-- 服务区提示 -->
+            <div id="service-area-alert">前方服务区，答题加油！</div>
+
+            <!-- 加油成功提示 -->
+            <div id="refuel-success">加油成功！油量已补充</div>
+
+            <!-- 岔道选择 -->
+            <div id="junction-panel">
+                <div id="junction-title">前方岔道</div>
+                <div id="junction-location">当前位置: 无锡</div>
+                <div id="route-options"></div>
+            </div>
+
+            <!-- 答题面板 -->
+            <div id="quiz-panel">
+                <div id="quiz-category">【车牌知识】</div>
+                <div id="quiz-question">江苏省的车牌简称是什么？</div>
+                <div id="quiz-options"></div>
+                <div id="quiz-result"></div>
+                <div id="quiz-buttons">
+                    <button id="refuel-btn" class="pixel-btn btn-yellow-green">加油补给</button>
+                    <button id="continue-btn" class="pixel-btn btn-gray">继续行驶</button>
+                </div>
+            </div>
+
+            <!-- 车库面板 -->
+            <div id="garage-panel">
+                <div id="garage-title">我的车库</div>
+                <div id="car-list"></div>
+                <div id="garage-buttons">
+                    <button id="close-garage" class="pixel-btn">确认选择</button>
+                    <button id="back-btn" class="pixel-btn btn-gray">返回</button>
+                </div>
+            </div>
+
+            <!-- 游戏结束面板 -->
+            <div id="game-over-panel">
+                <div id="game-over-title">油量耗尽！</div>
+                <div id="game-over-stats">
+                    本次里程: <span id="final-distance">0</span> km<br>
+                    本次积分: <span id="final-score">0</span><br>
+                    累计总积分: <span id="total-score">0</span>
+                </div>
+                <div id="game-over-buttons">
+                    <button id="restart-btn" class="pixel-btn">重新出发</button>
+                    <button id="home-btn" class="pixel-btn btn-blue">返回首页</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 数据文件 -->
+    <script src="data/cars.js"></script>
+    <script src="data/questions.js"></script>
+    <script src="data/roadNetwork.js"></script>
+
+    <!-- 核心文件 -->
+    <script src="js/storage.js"></script>
+    <script src="js/car.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/game.js"></script>
+
+    <!-- 初始化 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            Game.init();
+        });
+
+        setInterval(function() {
+            if (Game.state.running) {
+                Storage.save(Game.state);
+            }
+        }, 5000);
+    </script>
+</body>
+</html>
