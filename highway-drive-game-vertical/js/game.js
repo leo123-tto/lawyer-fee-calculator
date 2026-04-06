@@ -257,10 +257,11 @@ const Game = {
         this.state.junction = null;
         this.state.backgroundOffset = 0;
 
-        // 设置初始高速公路（根据当前城市）
-        const cityNode = ROAD_NETWORK_DATA.nodes[this.state.currentCity];
-        if (cityNode && cityNode.highways && cityNode.highways.length > 0) {
-            this.state.currentHighway = cityNode.highways[0];
+        // 初始化当前路线（根据起点城市）
+        ROAD_NETWORK_DATA.initRoute(this.state.currentCity);
+        const route = ROAD_NETWORK_DATA.routes[ROAD_NETWORK_DATA.currentRoute];
+        if (route) {
+            this.state.currentHighway = route.highway;
         }
 
         this.applyCarStats();
@@ -440,17 +441,21 @@ const Game = {
         });
     },
 
-    // 生成服务区 - 使用真实名称
+    // 生成服务区 - 使用真实名称，按路线顺序
     spawnServiceArea() {
-        // 从路网获取一个真实服务区名称
-        const serviceAreaName = ROAD_NETWORK_DATA.getRandomServiceArea();
-        const serviceAreaNode = ROAD_NETWORK_DATA.nodes[serviceAreaName];
+        // 从路网获取下一个服务区（按真实顺序）
+        const serviceArea = ROAD_NETWORK_DATA.getNextServiceArea();
+        if (!serviceArea) return;
+
+        const cityName = serviceArea.city;
+        const city = ROAD_NETWORK_DATA.cities[cityName];
 
         this.state.serviceArea = {
             y: -250,
             triggered: false,
-            name: serviceAreaName,
-            desc: serviceAreaNode ? serviceAreaNode.desc : serviceAreaName
+            name: serviceArea.name,
+            desc: `${serviceArea.name}·${cityName}`,
+            distance: serviceArea.distance
         };
     },
 
@@ -564,6 +569,11 @@ const Game = {
             this.state.currentCity = newCity;
             this.state.currentHighway = route.highway;  // 更新当前高速公路
             this.state.cityWelcomeTimer = 180;  // 显示3秒（60帧/秒）
+
+            // 切换到新路线
+            if (route.routeKey) {
+                ROAD_NETWORK_DATA.switchRoute(route.routeKey, newCity);
+            }
         }
 
         this.state.score += 10;
@@ -624,8 +634,8 @@ const Game = {
         else if (timeOfDay === '黄昏') { skyColor = '#FF6347'; }
         else if (timeOfDay === '夜晚') { skyColor = '#191970'; }
 
-        const node = ROAD_NETWORK_DATA.nodes[this.state.currentCity];
-        const region = node ? node.desc : '江南水乡';
+        const city = ROAD_NETWORK_DATA.cities[this.state.currentCity];
+        const region = city ? city.desc : '江南水乡';
 
         return { timeOfDay, weather: this.state.weather, region, skyColor };
     },
@@ -971,8 +981,8 @@ const Game = {
         if (this.state.cityWelcomeTimer <= 0) return;
 
         const ctx = this.ctx;
-        const cityNode = ROAD_NETWORK_DATA.nodes[this.state.currentCity];
-        const cityName = cityNode ? cityNode.desc : this.state.currentCity;
+        const city = ROAD_NETWORK_DATA.cities[this.state.currentCity];
+        const cityName = city ? city.desc : this.state.currentCity;
 
         // 计算淡入淡出效果
         const timer = this.state.cityWelcomeTimer;

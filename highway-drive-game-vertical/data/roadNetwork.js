@@ -1,213 +1,329 @@
-// 中国高速路网数据 - 真实服务区版
+// 中国高速路网数据 - 真实路线版（服务区按实际顺序排列）
 const ROAD_NETWORK_DATA = {
-    // 节点（城市/服务区/岔道点）
-    nodes: {
-        // ===== 起点 =====
-        '无锡': { x: 0, y: 0, region: '华东', desc: '太湖明珠·无锡', type: 'city', highways: ['G42', 'G2', 'S48'] },
+    // 路线定义 - 每条路线包含服务区按顺序排列
+    // 方向：从路线起点的视角，"上行"指远离起点，"下行"指向起点
+    routes: {
+        // ===== G42 沪蓉高速 =====
+        // 上海 → 成都（西行/上行）
+        'G42_上海_成都': {
+            highway: 'G42',
+            name: '沪蓉高速',
+            direction: '成都方向',
+            cities: ['上海', '苏州', '无锡', '常州', '镇江', '南京', '合肥', '武汉', '重庆', '成都'],
+            serviceAreas: [
+                { name: '昆山服务区', city: '苏州', distance: 20 },
+                { name: '阳澄湖服务区', city: '苏州', distance: 20 },
+                { name: '梅村服务区', city: '无锡', distance: 40 },
+                { name: '滆湖服务区', city: '常州', distance: 40 },
+                { name: '芳茂山服务区', city: '常州', distance: 20 },
+                { name: '窦庄服务区', city: '镇江', distance: 20 },
+                { name: '仙人山服务区', city: '镇江', distance: 25 },
+                { name: '黄栗墅服务区', city: '南京', distance: 35 },
+                // 安徽段
+                { name: '大墅服务区', city: '滁州', distance: 50 },
+                { name: '合肥服务区', city: '合肥', distance: 60 },
+                { name: '六安服务区', city: '六安', distance: 40 },
+                // 湖北段
+                { name: '木子店服务区', city: '麻城', distance: 100 },
+                { name: '武汉服务区', city: '武汉', distance: 80 },
+                // 重庆/四川段
+                { name: '龙溪河服务区', city: '重庆', distance: 300 },
+                { name: '大石停车区', city: '遂宁', distance: 100 },
+            ]
+        },
+        // 成都 → 上海（东行/下行）
+        'G42_成都_上海': {
+            highway: 'G42',
+            name: '沪蓉高速',
+            direction: '上海方向',
+            cities: ['成都', '重庆', '武汉', '合肥', '南京', '镇江', '常州', '无锡', '苏州', '上海'],
+            serviceAreas: [
+                { name: '大石停车区', city: '遂宁', distance: 100 },
+                { name: '龙溪河服务区', city: '重庆', distance: 300 },
+                { name: '武汉服务区', city: '武汉', distance: 80 },
+                { name: '木子店服务区', city: '麻城', distance: 100 },
+                { name: '六安服务区', city: '六安', distance: 40 },
+                { name: '合肥服务区', city: '合肥', distance: 60 },
+                { name: '大墅服务区', city: '滁州', distance: 50 },
+                { name: '黄栗墅服务区', city: '南京', distance: 35 },
+                { name: '仙人山服务区', city: '镇江', distance: 25 },
+                { name: '窦庄服务区', city: '镇江', distance: 20 },
+                { name: '芳茂山服务区', city: '常州', distance: 20 },
+                { name: '滆湖服务区', city: '常州', distance: 40 },
+                { name: '梅村服务区', city: '无锡', distance: 40 },
+                { name: '阳澄湖服务区', city: '苏州', distance: 20 },
+                { name: '昆山服务区', city: '苏州', distance: 20 },
+            ]
+        },
 
-        // ===== 沪宁高速沿线 (G42/G2) =====
-        '梅村服务区': { x: 15, y: 0, region: '华东', desc: '梅村服务区·无锡', type: 'service', distance: 15, facilities: ['加油', '餐饮', '超市', '厕所'] },
-        '苏州': { x: 40, y: 5, region: '华东', desc: '园林之城·苏州', type: 'city', highways: ['G42', 'G2', 'G15W'] },
-        '阳澄湖服务区': { x: 55, y: 5, region: '华东', desc: '阳澄湖服务区·昆山', type: 'service', distance: 15, facilities: ['加油', '餐饮', '大闸蟹'] },
-        '昆山': { x: 75, y: 8, region: '华东', desc: '百强县·昆山', type: 'junction', highways: ['G42', 'G2'] },
-        '花桥服务区': { x: 90, y: 10, region: '华东', desc: '花桥服务区·苏沪交界', type: 'service', distance: 15, facilities: ['加油', '餐饮'] },
-        '上海': { x: 130, y: 0, region: '华东', desc: '东方明珠·上海', type: 'city', highways: ['G42', 'G2', 'G40', 'G15'] },
+        // ===== G2 京沪高速 =====
+        // 北京 → 上海（南行/上行）
+        'G2_北京_上海': {
+            highway: 'G2',
+            name: '京沪高速',
+            direction: '上海方向',
+            cities: ['北京', '天津', '沧州', '德州', '济南', '泰安', '临沂', '淮安', '扬州', '泰州', '无锡', '苏州', '上海'],
+            serviceAreas: [
+                // 北京段
+                { name: '大羊坊服务区', city: '北京', distance: 20 },
+                // 天津段
+                { name: '津蓟服务区', city: '天津', distance: 30 },
+                { name: '天津服务区', city: '天津', distance: 20 },
+                // 河北段
+                { name: '青县服务区', city: '沧州', distance: 50 },
+                { name: '东光服务区', city: '沧州', distance: 40 },
+                { name: '吴桥服务区', city: '德州', distance: 30 },
+                // 山东段
+                { name: '乐陵服务区', city: '德州', distance: 30 },
+                { name: '济南服务区', city: '济南', distance: 80 },
+                { name: '泰安服务区', city: '泰安', distance: 40 },
+                { name: '新泰服务区', city: '泰安', distance: 50 },
+                { name: '临沂服务区', city: '临沂', distance: 60 },
+                { name: '郯城服务区', city: '临沂', distance: 40 },
+                // 江苏段
+                { name: '新沂服务区', city: '徐州', distance: 30 },
+                { name: '沭阳服务区', city: '宿迁', distance: 46 },
+                { name: '刘老庄服务区', city: '淮安', distance: 31 },
+                { name: '平桥服务区', city: '淮安', distance: 46 },
+                { name: '宝应服务区', city: '扬州', distance: 40 },
+                { name: '高邮服务区', city: '扬州', distance: 39 },
+                { name: '江都服务区', city: '扬州', distance: 44 },
+                { name: '宣堡服务区', city: '泰州', distance: 34 },
+                { name: '广陵服务区', city: '泰州', distance: 32 },
+                { name: '堰桥服务区', city: '无锡', distance: 49 },
+                { name: '梅村服务区', city: '无锡', distance: 21 },
+                { name: '阳澄湖服务区', city: '苏州', distance: 43 },
+            ]
+        },
+        // 上海 → 北京（北行/下行）
+        'G2_上海_北京': {
+            highway: 'G2',
+            name: '京沪高速',
+            direction: '北京方向',
+            cities: ['上海', '苏州', '无锡', '泰州', '扬州', '淮安', '临沂', '泰安', '济南', '德州', '沧州', '天津', '北京'],
+            serviceAreas: [
+                { name: '阳澄湖服务区', city: '苏州', distance: 43 },
+                { name: '梅村服务区', city: '无锡', distance: 21 },
+                { name: '堰桥服务区', city: '无锡', distance: 49 },
+                { name: '广陵服务区', city: '泰州', distance: 32 },
+                { name: '宣堡服务区', city: '泰州', distance: 34 },
+                { name: '江都服务区', city: '扬州', distance: 44 },
+                { name: '高邮服务区', city: '扬州', distance: 39 },
+                { name: '宝应服务区', city: '扬州', distance: 40 },
+                { name: '平桥服务区', city: '淮安', distance: 46 },
+                { name: '刘老庄服务区', city: '淮安', distance: 31 },
+                { name: '沭阳服务区', city: '宿迁', distance: 46 },
+                { name: '新沂服务区', city: '徐州', distance: 30 },
+                { name: '郯城服务区', city: '临沂', distance: 40 },
+                { name: '临沂服务区', city: '临沂', distance: 60 },
+                { name: '新泰服务区', city: '泰安', distance: 50 },
+                { name: '泰安服务区', city: '泰安', distance: 40 },
+                { name: '济南服务区', city: '济南', distance: 80 },
+                { name: '乐陵服务区', city: '德州', distance: 30 },
+                { name: '吴桥服务区', city: '德州', distance: 30 },
+                { name: '东光服务区', city: '沧州', distance: 40 },
+                { name: '青县服务区', city: '沧州', distance: 50 },
+                { name: '天津服务区', city: '天津', distance: 20 },
+                { name: '津蓟服务区', city: '天津', distance: 30 },
+                { name: '大羊坊服务区', city: '北京', distance: 20 },
+            ]
+        },
 
-        // ===== 往南京方向 =====
-        '堰桥枢纽': { x: -20, y: -10, region: '华东', desc: '堰桥枢纽', type: 'junction', highways: ['G42', 'S48'] },
-        '江阴服务区': { x: -35, y: -25, region: '华东', desc: '江阴服务区·大桥南岸', type: 'service', distance: 35, facilities: ['加油', '餐饮', '超市'] },
-        '江阴': { x: -40, y: -30, region: '华东', desc: '江阴·华西村', type: 'city', highways: ['G2', 'S38'] },
-        '江阴大桥': { x: -45, y: -35, region: '华东', desc: '江阴长江大桥', type: 'landmark' },
-        '靖江服务区': { x: -55, y: -50, region: '华东', desc: '靖江服务区', type: 'service', distance: 20, facilities: ['加油', '餐饮'] },
-        '靖江': { x: -60, y: -55, region: '华东', desc: '靖江·猪肉脯之乡', type: 'city', highways: ['G2'] },
-        '泰兴服务区': { x: -80, y: -70, region: '华东', desc: '泰兴服务区·银杏之乡', type: 'service', distance: 25, facilities: ['加油', '餐饮'] },
-        '泰州': { x: -95, y: -80, region: '华东', desc: '凤城·泰州', type: 'city', highways: ['G2', 'G1515'] },
-        '广陵枢纽': { x: -110, y: -90, region: '华东', desc: '广陵枢纽', type: 'junction', highways: ['G2', 'G1515'] },
+        // ===== G25 长深高速（宁杭段）=====
+        // 南京 → 杭州（南行）
+        'G25_南京_杭州': {
+            highway: 'G25',
+            name: '长深高速',
+            direction: '杭州方向',
+            cities: ['南京', '溧水', '溧阳', '宜兴', '湖州', '杭州'],
+            serviceAreas: [
+                { name: '江宁服务区', city: '南京', distance: 20 },
+                { name: '东庐山服务区', city: '南京', distance: 30 },
+                { name: '溧阳天目湖服务区', city: '常州', distance: 50 },
+                { name: '宜兴太湖服务区', city: '无锡', distance: 40 },
+                { name: '长兴服务区', city: '湖州', distance: 30 },
+                { name: '德清服务区', city: '湖州', distance: 30 },
+                { name: '杭州服务区', city: '杭州', distance: 40 },
+            ]
+        },
+        // 杭州 → 南京（北行）
+        'G25_杭州_南京': {
+            highway: 'G25',
+            name: '长深高速',
+            direction: '南京方向',
+            cities: ['杭州', '湖州', '宜兴', '溧阳', '溧水', '南京'],
+            serviceAreas: [
+                { name: '杭州服务区', city: '杭州', distance: 40 },
+                { name: '德清服务区', city: '湖州', distance: 30 },
+                { name: '长兴服务区', city: '湖州', distance: 30 },
+                { name: '宜兴太湖服务区', city: '无锡', distance: 40 },
+                { name: '溧阳天目湖服务区', city: '常州', distance: 50 },
+                { name: '东庐山服务区', city: '南京', distance: 30 },
+                { name: '江宁服务区', city: '南京', distance: 20 },
+            ]
+        },
 
-        // ===== 往徐州/济南/北京方向 =====
-        '扬州': { x: -70, y: 20, region: '华东', desc: '烟花三月·扬州', type: 'city', highways: ['G40', 'S28'] },
-        '扬州服务区': { x: -85, y: 25, region: '华东', desc: '扬州服务区·瘦西湖', type: 'service', distance: 20, facilities: ['加油', '餐饮', '特产'] },
-        '淮安': { x: -100, y: 50, region: '华东', desc: '周恩来故乡·淮安', type: 'city', highways: ['G2', 'G25'] },
-        '淮安服务区': { x: -115, y: 55, region: '华东', desc: '淮安服务区·总理故里', type: 'service', distance: 25, facilities: ['加油', '餐饮', '超市'] },
-        '涟水服务区': { x: -130, y: 65, region: '华东', desc: '涟水服务区', type: 'service', distance: 20, facilities: ['加油', '餐饮'] },
-        '徐州': { x: -150, y: 100, region: '华东', desc: '淮海枢纽·徐州', type: 'city', highways: ['G2', 'G3', 'G30'] },
-        '徐州服务区': { x: -165, y: 105, region: '华东', desc: '徐州服务区·汉文化', type: 'service', distance: 20, facilities: ['加油', '餐饮', '超市'] },
-        '枣庄服务区': { x: -185, y: 120, region: '华北', desc: '枣庄服务区·铁道游击队', type: 'service', distance: 25, facilities: ['加油', '餐饮'] },
-        '枣庄': { x: -200, y: 125, region: '华北', desc: '枣庄·台儿庄古城', type: 'city', highways: ['G3'] },
-        '泰安服务区': { x: -220, y: 145, region: '华北', desc: '泰安服务区·泰山脚下', type: 'service', distance: 30, facilities: ['加油', '餐饮', '特产'] },
-        '泰安': { x: -235, y: 150, region: '华北', desc: '五岳独尊·泰山', type: 'city', highways: ['G3', 'G22'] },
-        '济南': { x: -250, y: 160, region: '华北', desc: '泉城·济南', type: 'city', highways: ['G2', 'G3', 'G20', 'G35'] },
-        '济南服务区': { x: -265, y: 165, region: '华北', desc: '济南服务区·趵突泉', type: 'service', distance: 20, facilities: ['加油', '餐饮', '超市'] },
-        '德州服务区': { x: -290, y: 180, region: '华北', desc: '德州服务区·扒鸡之乡', type: 'service', distance: 30, facilities: ['加油', '餐饮', '特产'] },
-        '德州': { x: -310, y: 185, region: '华北', desc: '德州·扒鸡', type: 'city', highways: ['G3'] },
-        '沧州服务区': { x: -340, y: 210, region: '华北', desc: '沧州服务区·铁狮子', type: 'service', distance: 35, facilities: ['加油', '餐饮'] },
-        '沧州': { x: -360, y: 215, region: '华北', desc: '狮城·沧州', type: 'city', highways: ['G3'] },
-        '天津': { x: -390, y: 240, region: '华北', desc: '津门·天津', type: 'city', highways: ['G2', 'G3', 'S30'] },
-        '天津服务区': { x: -400, y: 245, region: '华北', desc: '天津服务区·狗不理', type: 'service', distance: 15, facilities: ['加油', '餐饮', '特产'] },
-        '廊坊服务区': { x: -420, y: 260, region: '华北', desc: '廊坊服务区', type: 'service', distance: 25, facilities: ['加油', '餐饮'] },
-        '北京': { x: -450, y: 280, region: '华北', desc: '首都·北京', type: 'city', highways: ['G1', 'G2', 'G3', 'G4', 'G5', 'G6'] },
-
-        // ===== 往杭州方向 =====
-        '宜兴': { x: 25, y: -30, region: '华东', desc: '陶都·宜兴', type: 'city', highways: ['G25', 'S48'] },
-        '长兴服务区': { x: 45, y: -45, region: '华东', desc: '长兴服务区·银杏长廊', type: 'service', distance: 30, facilities: ['加油', '餐饮'] },
-        '湖州': { x: 60, y: -55, region: '华东', desc: '太湖明珠·湖州', type: 'city', highways: ['G50', 'S12'] },
-        '湖州服务区': { x: 75, y: -60, region: '华东', desc: '湖州服务区·太湖蟹', type: 'service', distance: 20, facilities: ['加油', '餐饮', '特产'] },
-        '德清服务区': { x: 95, y: -70, region: '华东', desc: '德清服务区·莫干山', type: 'service', distance: 25, facilities: ['加油', '餐饮'] },
-        '杭州': { x: 120, y: -80, region: '华东', desc: '人间天堂·杭州', type: 'city', highways: ['G25', 'G56', 'G60', 'G92'] },
-        '杭州服务区': { x: 135, y: -85, region: '华东', desc: '杭州服务区·西湖龙井', type: 'service', distance: 20, facilities: ['加油', '餐饮', '特产'] },
-
-        // ===== 往合肥/武汉/成都方向 =====
-        '常州': { x: -30, y: 15, region: '华东', desc: '龙城·常州', type: 'city', highways: ['G42', 'S38'] },
-        '常州服务区': { x: -45, y: 18, region: '华东', desc: '常州服务区·恐龙园', type: 'service', distance: 20, facilities: ['加油', '餐饮'] },
-        '丹阳服务区': { x: -60, y: 25, region: '华东', desc: '丹阳服务区·眼镜之都', type: 'service', distance: 20, facilities: ['加油', '餐饮'] },
-        '镇江': { x: -75, y: 30, region: '华东', desc: '醋都·镇江', type: 'city', highways: ['G42', 'G4011'] },
-        '镇江服务区': { x: -90, y: 32, region: '华东', desc: '镇江服务区·锅盖面', type: 'service', distance: 20, facilities: ['加油', '餐饮', '特产'] },
-        '南京': { x: -110, y: 40, region: '华东', desc: '六朝古都·南京', type: 'city', highways: ['G42', 'G2', 'G25', 'G36', 'G40'] },
-        '南京服务区': { x: -125, y: 42, region: '华东', desc: '南京服务区·夫子庙', type: 'service', distance: 20, facilities: ['加油', '餐饮', '特产'] },
-        '滁州服务区': { x: -150, y: 50, region: '华东', desc: '滁州服务区·醉翁亭', type: 'service', distance: 30, facilities: ['加油', '餐饮'] },
-        '合肥': { x: -180, y: 60, region: '华东', desc: '庐州·合肥', type: 'city', highways: ['G3', 'G40', 'G42', 'S1'] },
-        '合肥服务区': { x: -195, y: 62, region: '华东', desc: '合肥服务区·三河古镇', type: 'service', distance: 20, facilities: ['加油', '餐饮', '特产'] },
-        '六安服务区': { x: -220, y: 70, region: '华东', desc: '六安服务区·瓜片茶', type: 'service', distance: 30, facilities: ['加油', '餐饮'] },
-        '金寨服务区': { x: -250, y: 80, region: '华东', desc: '金寨服务区·大别山', type: 'service', distance: 35, facilities: ['加油', '餐饮'] },
-        '麻城服务区': { x: -280, y: 90, region: '华中', desc: '麻城服务区·杜鹃花', type: 'service', distance: 35, facilities: ['加油', '餐饮'] },
-        '武汉': { x: -320, y: 100, region: '华中', desc: '江城·武汉', type: 'city', highways: ['G4', 'G42', 'G50', 'G70'] },
-        '武汉服务区': { x: -335, y: 102, region: '华中', desc: '武汉服务区·热干面', type: 'service', distance: 20, facilities: ['加油', '餐饮', '特产'] },
-        '仙桃服务区': { x: -360, y: 110, region: '华中', desc: '仙桃服务区·体操之乡', type: 'service', distance: 30, facilities: ['加油', '餐饮'] },
-        '荆州服务区': { x: -400, y: 120, region: '华中', desc: '荆州服务区·古城墙', type: 'service', distance: 40, facilities: ['加油', '餐饮', '特产'] },
-        '荆州': { x: -420, y: 125, region: '华中', desc: '古城·荆州', type: 'city', highways: ['G50', 'G55'] },
-        '宜昌服务区': { x: -450, y: 135, region: '华中', desc: '宜昌服务区·三峡大坝', type: 'service', distance: 35, facilities: ['加油', '餐饮', '特产'] },
-        '宜昌': { x: -470, y: 140, region: '华中', desc: '三峡门户·宜昌', type: 'city', highways: ['G50', 'G42'] },
-        '恩施服务区': { x: -510, y: 150, region: '西南', desc: '恩施服务区·大峡谷', type: 'service', distance: 50, facilities: ['加油', '餐饮'] },
-        '万州服务区': { x: -550, y: 160, region: '西南', desc: '万州服务区·烤鱼', type: 'service', distance: 50, facilities: ['加油', '餐饮', '特产'] },
-        '重庆': { x: -590, y: 170, region: '西南', desc: '山城·重庆', type: 'city', highways: ['G5', 'G50', 'G65', 'G75'] },
-        '内江服务区': { x: -630, y: 180, region: '西南', desc: '内江服务区·甜城', type: 'service', distance: 50, facilities: ['加油', '餐饮'] },
-        '成都': { x: -670, y: 190, region: '西南', desc: '天府之国·成都', type: 'city', highways: ['G5', 'G42', 'G76'] },
-
-        // ===== 往广州/深圳方向 =====
-        '嘉兴服务区': { x: 100, y: -30, region: '华东', desc: '嘉兴服务区·南湖', type: 'service', distance: 35, facilities: ['加油', '餐饮', '粽子'] },
-        '嘉兴': { x: 115, y: -35, region: '华东', desc: '红船起航·嘉兴', type: 'city', highways: ['G60', 'S12'] },
-        '杭州湾跨海大桥': { x: 130, y: -45, region: '华东', desc: '杭州湾跨海大桥', type: 'landmark' },
-        '宁波服务区': { x: 150, y: -55, region: '华东', desc: '宁波服务区·海鲜', type: 'service', distance: 30, facilities: ['加油', '餐饮', '特产'] },
-        '宁波': { x: 165, y: -60, region: '华东', desc: '港口城市·宁波', type: 'city', highways: ['G15', 'G92'] },
-        '台州服务区': { x: 190, y: -75, region: '华东', desc: '台州服务区', type: 'service', distance: 35, facilities: ['加油', '餐饮'] },
-        '温州服务区': { x: 220, y: -95, region: '华东', desc: '温州服务区·瓯江', type: 'service', distance: 40, facilities: ['加油', '餐饮'] },
-        '温州': { x: 240, y: -105, region: '华东', desc: '鹿城·温州', type: 'city', highways: ['G15', 'G1513'] },
-        '宁德服务区': { x: 280, y: -130, region: '华东', desc: '宁德服务区·白茶', type: 'service', distance: 45, facilities: ['加油', '餐饮'] },
-        '福州': { x: 320, y: -150, region: '华东', desc: '榕城·福州', type: 'city', highways: ['G3', 'G15'] },
-        '厦门': { x: 360, y: -180, region: '华东', desc: '鹭岛·厦门', type: 'city', highways: ['G15', 'G76'] },
-        '深圳': { x: 400, y: -220, region: '华南', desc: '鹏城·深圳', type: 'city', highways: ['G4', 'G15', 'S3'] },
-        '广州': { x: 380, y: -240, region: '华南', desc: '羊城·广州', type: 'city', highways: ['G4', 'G15', 'G35', 'G45'] },
-
-        // ===== 往东北方向 =====
-        '沈阳': { x: -400, y: 350, region: '东北', desc: '盛京·沈阳', type: 'city', highways: ['G1', 'G11', 'G15'] },
-        '长春': { x: -420, y: 400, region: '东北', desc: '北国春城·长春', type: 'city', highways: ['G1', 'G12'] },
-        '哈尔滨': { x: -440, y: 450, region: '东北', desc: '冰城·哈尔滨', type: 'city', highways: ['G1', 'G10', 'G1011'] },
-
-        // ===== 往西南方向 =====
-        '贵阳': { x: -400, y: 80, region: '西南', desc: '林城·贵阳', type: 'city', highways: ['G60', 'G75', 'G76'] },
-        '昆明': { x: -480, y: 100, region: '西南', desc: '春城·昆明', type: 'city', highways: ['G5', 'G56', 'G60', 'G78'] },
+        // ===== S48 锡宜高速 =====
+        // 无锡 → 宜兴（西行）
+        'S48_无锡_宜兴': {
+            highway: 'S48',
+            name: '锡宜高速',
+            direction: '宜兴方向',
+            cities: ['无锡', '宜兴'],
+            serviceAreas: [
+                { name: '梅村服务区', city: '无锡', distance: 15 },
+                { name: '宜兴服务区', city: '宜兴', distance: 50 },
+            ]
+        },
+        // 宜兴 → 无锡（东行）
+        'S48_宜兴_无锡': {
+            highway: 'S48',
+            name: '锡宜高速',
+            direction: '无锡方向',
+            cities: ['宜兴', '无锡'],
+            serviceAreas: [
+                { name: '宜兴服务区', city: '宜兴', distance: 50 },
+                { name: '梅村服务区', city: '无锡', distance: 15 },
+            ]
+        },
     },
 
-    // 高速公路数据
+    // 城市节点信息
+    cities: {
+        '上海': { region: '华东', desc: '东方明珠·上海', highways: ['G42', 'G2', 'G15', 'G40', 'G60'] },
+        '苏州': { region: '华东', desc: '园林之城·苏州', highways: ['G42', 'G2'] },
+        '无锡': { region: '华东', desc: '太湖明珠·无锡', highways: ['G42', 'G2', 'S48'] },
+        '常州': { region: '华东', desc: '龙城·常州', highways: ['G42'] },
+        '镇江': { region: '华东', desc: '醋都·镇江', highways: ['G42'] },
+        '南京': { region: '华东', desc: '六朝古都·南京', highways: ['G42', 'G2', 'G25', 'G40'] },
+        '合肥': { region: '华东', desc: '庐州·合肥', highways: ['G42', 'G3', 'G40'] },
+        '武汉': { region: '华中', desc: '江城·武汉', highways: ['G42', 'G4', 'G50'] },
+        '重庆': { region: '西南', desc: '山城·重庆', highways: ['G42', 'G50', 'G65'] },
+        '成都': { region: '西南', desc: '天府之国·成都', highways: ['G42', 'G5', 'G76'] },
+        '北京': { region: '华北', desc: '首都·北京', highways: ['G1', 'G2', 'G3', 'G4', 'G5', 'G6'] },
+        '天津': { region: '华北', desc: '津门·天津', highways: ['G2', 'G3'] },
+        '济南': { region: '华北', desc: '泉城·济南', highways: ['G2', 'G3'] },
+        '泰安': { region: '华北', desc: '五岳独尊·泰山', highways: ['G2', 'G3'] },
+        '徐州': { region: '华东', desc: '淮海枢纽·徐州', highways: ['G2', 'G3', 'G30'] },
+        '淮安': { region: '华东', desc: '周恩来故乡·淮安', highways: ['G2', 'G25'] },
+        '扬州': { region: '华东', desc: '烟花三月·扬州', highways: ['G2', 'G40'] },
+        '泰州': { region: '华东', desc: '凤城·泰州', highways: ['G2'] },
+        '宜兴': { region: '华东', desc: '陶都·宜兴', highways: ['G25', 'S48'] },
+        '杭州': { region: '华东', desc: '人间天堂·杭州', highways: ['G25', 'G56', 'G60'] },
+        '湖州': { region: '华东', desc: '太湖明珠·湖州', highways: ['G25', 'G50'] },
+    },
+
+    // 高速公路基本信息
     highways: {
-        'G1': { name: '京哈高速', start: '北京', end: '哈尔滨', via: ['沈阳', '长春'] },
-        'G2': { name: '京沪高速', start: '北京', end: '上海', via: ['天津', '济南', '徐州', '淮安', '扬州', '无锡', '苏州'] },
-        'G3': { name: '京台高速', start: '北京', end: '福州', via: ['天津', '济南', '徐州', '合肥'] },
-        'G4': { name: '京港澳高速', start: '北京', end: '广州', via: ['石家庄', '郑州', '武汉'] },
-        'G5': { name: '京昆高速', start: '北京', end: '昆明', via: ['太原', '西安', '成都'] },
-        'G6': { name: '京藏高速', start: '北京', end: '拉萨', via: ['张家口', '呼和浩特'] },
-        'G15': { name: '沈海高速', start: '沈阳', end: '海口', via: ['大连', '青岛', '上海', '宁波', '福州', '厦门', '广州', '深圳'] },
-        'G25': { name: '长深高速', start: '长春', end: '深圳', via: ['沈阳', '淮安', '南京', '杭州'] },
-        'G35': { name: '济广高速', start: '济南', end: '广州', via: ['合肥'] },
-        'G40': { name: '沪陕高速', start: '上海', end: '西安', via: ['南京', '合肥'] },
-        'G42': { name: '沪蓉高速', start: '上海', end: '成都', via: ['苏州', '无锡', '南京', '合肥', '武汉', '重庆'] },
-        'G50': { name: '沪渝高速', start: '上海', end: '重庆', via: ['湖州', '武汉', '宜昌'] },
-        'G56': { name: '杭瑞高速', start: '杭州', end: '瑞丽', via: ['南昌', '昆明'] },
-        'G60': { name: '沪昆高速', start: '上海', end: '昆明', via: ['杭州', '南昌', '长沙', '贵阳'] },
-        'G65': { name: '包茂高速', start: '包头', end: '茂名', via: ['西安', '重庆'] },
-        'G75': { name: '兰海高速', start: '兰州', end: '海口', via: ['重庆', '贵阳', '南宁'] },
-        'G76': { name: '厦蓉高速', start: '厦门', end: '成都', via: ['长沙'] },
-        'G1515': { name: '盐靖高速', start: '盐城', end: '靖江', via: ['泰州'] },
-        'S48': { name: '锡宜高速', start: '无锡', end: '宜兴', via: [] },
-        'S38': { name: '常合高速', start: '常州', end: '合肥', via: ['江阴'] },
+        'G1': { name: '京哈高速', start: '北京', end: '哈尔滨' },
+        'G2': { name: '京沪高速', start: '北京', end: '上海' },
+        'G3': { name: '京台高速', start: '北京', end: '福州' },
+        'G4': { name: '京港澳高速', start: '北京', end: '广州' },
+        'G5': { name: '京昆高速', start: '北京', end: '昆明' },
+        'G6': { name: '京藏高速', start: '北京', end: '拉萨' },
+        'G15': { name: '沈海高速', start: '沈阳', end: '海口' },
+        'G25': { name: '长深高速', start: '长春', end: '深圳' },
+        'G42': { name: '沪蓉高速', start: '上海', end: '成都' },
+        'G50': { name: '沪渝高速', start: '上海', end: '重庆' },
+        'G60': { name: '沪昆高速', start: '上海', end: '昆明' },
+        'S48': { name: '锡宜高速', start: '无锡', end: '宜兴' },
     },
 
-    // 服务区列表 - 按路线组织
-    serviceAreas: {
-        'G42_东': ['梅村服务区', '阳澄湖服务区', '花桥服务区'],
-        'G42_西': ['常州服务区', '丹阳服务区', '镇江服务区', '南京服务区', '滁州服务区', '合肥服务区', '六安服务区', '金寨服务区', '麻城服务区', '武汉服务区', '仙桃服务区', '荆州服务区', '宜昌服务区', '恩施服务区', '万州服务区', '内江服务区'],
-        'G2_北': ['江阴服务区', '靖江服务区', '泰兴服务区', '淮安服务区', '涟水服务区', '徐州服务区', '枣庄服务区', '泰安服务区', '济南服务区', '德州服务区', '沧州服务区', '天津服务区', '廊坊服务区'],
-        'G25_南': ['长兴服务区', '湖州服务区', '德清服务区', '杭州服务区'],
-    },
+    // 当前游戏状态
+    currentRoute: null,      // 当前路线 key
+    currentServiceIndex: 0,  // 当前服务区索引
 
-    // 获取下一个服务区
-    getNextServiceArea(currentLocation, direction) {
-        const allAreas = [
-            ...this.serviceAreas['G42_东'],
-            ...this.serviceAreas['G42_西'],
-            ...this.serviceAreas['G2_北'],
-            ...this.serviceAreas['G25_南']
-        ];
-
-        const currentIdx = allAreas.indexOf(currentLocation);
-        if (currentIdx >= 0 && currentIdx < allAreas.length - 1) {
-            return allAreas[currentIdx + 1];
+    // 初始化路线（根据起点城市）
+    initRoute(startCity) {
+        // 根据起点城市找到合适的路线
+        for (const [routeKey, route] of Object.entries(this.routes)) {
+            if (route.cities[0] === startCity) {
+                this.currentRoute = routeKey;
+                this.currentServiceIndex = 0;
+                return route;
+            }
         }
+        // 默认从无锡出发，走 G42 往成都方向
+        this.currentRoute = 'G42_上海_成都';
+        this.currentServiceIndex = 3; // 无锡在索引3
+        return this.routes[this.currentRoute];
+    },
 
-        return allAreas[Math.floor(Math.random() * allAreas.length)];
+    // 获取下一个服务区（按真实顺序）
+    getNextServiceArea() {
+        if (!this.currentRoute) {
+            this.initRoute('无锡');
+        }
+        const route = this.routes[this.currentRoute];
+        if (this.currentServiceIndex < route.serviceAreas.length - 1) {
+            this.currentServiceIndex++;
+            return route.serviceAreas[this.currentServiceIndex];
+        }
+        // 如果到达路线终点，返回最后一个服务区
+        return route.serviceAreas[route.serviceAreas.length - 1];
+    },
+
+    // 获取当前服务区
+    getCurrentServiceArea() {
+        if (!this.currentRoute) {
+            this.initRoute('无锡');
+        }
+        const route = this.routes[this.currentRoute];
+        return route.serviceAreas[this.currentServiceIndex];
+    },
+
+    // 切换路线（在岔道选择时）
+    switchRoute(newRouteKey, currentCity) {
+        if (this.routes[newRouteKey]) {
+            this.currentRoute = newRouteKey;
+            // 找到当前城市在新路线中的位置
+            const route = this.routes[newRouteKey];
+            const cityIndex = route.cities.indexOf(currentCity);
+            // 找到对应的服务区索引
+            for (let i = 0; i < route.serviceAreas.length; i++) {
+                if (route.serviceAreas[i].city === currentCity || i >= cityIndex * 2) {
+                    this.currentServiceIndex = i;
+                    break;
+                }
+            }
+        }
     },
 
     // 从某节点出发的可选路径
-    getRoutesFrom(nodeKey) {
-        const node = this.nodes[nodeKey];
-        if (!node) return [];
-
+    getRoutesFrom(cityKey) {
         const routes = [];
-        node.highways.forEach(hwKey => {
+        const city = this.cities[cityKey];
+        if (!city) return routes;
+
+        city.highways.forEach(hwKey => {
             const hw = this.highways[hwKey];
             if (!hw) return;
 
-            const allNodes = [hw.start, ...hw.via, hw.end];
-            const idx = allNodes.indexOf(nodeKey);
-
-            if (idx >= 0) {
-                // 向起点方向
-                if (idx > 0) {
-                    const prevNodes = allNodes.slice(0, idx);
-                    const target = prevNodes[prevNodes.length - 1];
-                    const targetNode = this.nodes[target];
-                    routes.push({
-                        highway: hwKey,
-                        name: hw.name,
-                        direction: hw.start + '方向',
-                        target: target,
-                        targetName: targetNode ? targetNode.desc : target,
-                        distance: Math.abs((targetNode?.x || 0) - (node.x || 0)) * 2
-                    });
-                }
-                // 向终点方向
-                if (idx < allNodes.length - 1) {
-                    const nextNodes = allNodes.slice(idx + 1);
-                    const target = nextNodes[0];
-                    const targetNode = this.nodes[target];
-                    routes.push({
-                        highway: hwKey,
-                        name: hw.name,
-                        direction: hw.end + '方向',
-                        target: target,
-                        targetName: targetNode ? targetNode.desc : target,
-                        distance: Math.abs((targetNode?.x || 0) - (node.x || 0)) * 2
-                    });
+            // 查找经过该城市的路线
+            for (const [routeKey, route] of Object.entries(this.routes)) {
+                if (route.highway === hwKey && route.cities.includes(cityKey)) {
+                    const idx = route.cities.indexOf(cityKey);
+                    if (idx < route.cities.length - 1) {
+                        const target = route.cities[route.cities.length - 1];
+                        const targetCity = this.cities[target];
+                        routes.push({
+                            highway: hwKey,
+                            name: hw.name,
+                            direction: route.direction,
+                            target: target,
+                            targetName: targetCity ? targetCity.desc : target,
+                            routeKey: routeKey
+                        });
+                    }
                 }
             }
         });
 
-        return routes.slice(0, 2); // 只返回前两条路线
+        return routes.slice(0, 2);
     },
 
-    // 获取随机服务区
+    // 获取随机服务区（兼容旧代码，但现在返回当前路线的服务区）
     getRandomServiceArea() {
-        const allAreas = Object.values(this.serviceAreas).flat();
-        return allAreas[Math.floor(Math.random() * allAreas.length)];
+        return this.getNextServiceArea()?.name || '梅村服务区';
     }
 };
