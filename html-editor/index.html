@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HTML 可视化编辑器</title>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #f5f5f7; --surface: #ffffff; --surface2: #e8e8ed;
+  --border: #d1d1d6; --text: #1d1d1f; --text2: #6e6e73;
+  --accent: #0071e3; --accent-hover: #0077ed;
+  --code-bg: #1e1e2e; --code-text: #cdd6f4;
+  --highlight: rgba(0,113,227,.15);
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 12px rgba(0,0,0,.04);
+  --radius: 10px; --transition: .2s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #161618; --surface: #1c1c1e; --surface2: #2c2c2e;
+    --border: #38383a; --text: #f5f5f7; --text2: #98989d;
+    --accent: #2997ff; --accent-hover: #40a9ff;
+    --code-bg: #0d0d11; --code-text: #cdd6f4;
+    --highlight: rgba(41,151,255,.18);
+    --shadow: 0 1px 3px rgba(0,0,0,.3), 0 4px 12px rgba(0,0,0,.2);
+  }
+}
+
+html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif; background: var(--bg); color: var(--text); }
+
+#app { display: flex; height: 100vh; overflow: hidden; }
+
+/* ── Code Panel ── */
+#code-panel {
+  width: 420px; min-width: 0; display: flex; flex-direction: column; position: relative;
+  background: var(--surface); border-right: 1px solid var(--border);
+  transition: width var(--transition), min-width var(--transition);
+  overflow: hidden; flex-shrink: 0;
+}
+#code-panel.collapsed { width: 0; min-width: 0; border-right: none; }
+
+#code-panel .panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+#code-panel .panel-header h2 { font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--text2); text-transform: uppercase; }
+
+#code-wrap { flex: 1; position: relative; overflow: hidden; }
+
+#code-highlight {
+  position: absolute; inset: 0; padding: 16px; overflow: auto;
+  font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+  font-size: 13px; line-height: 1.6; tab-size: 2;
+  background: var(--code-bg); color: transparent;
+  white-space: pre-wrap; word-wrap: break-word; pointer-events: none; z-index: 0;
+}
+#code-highlight .hl-line {
+  background: var(--highlight); display: block; margin: 0 -16px; padding: 0 16px;
+  border-left: 3px solid var(--accent); transition: background .15s;
+}
+
+#code-input {
+  position: absolute; inset: 0; width: 100%; height: 100%; border: none; outline: none; resize: none;
+  padding: 16px; font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+  font-size: 13px; line-height: 1.6; tab-size: 2;
+  background: transparent; color: var(--code-text);
+  z-index: 1; -webkit-text-fill-color: var(--code-text); caret-color: var(--code-text);
+}
+
+/* ── Preview ── */
+#preview-panel { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+#toolbar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 10px 16px; background: var(--surface);
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border: 1px solid var(--border); border-radius: 7px;
+  background: var(--surface); color: var(--text); font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all var(--transition); white-space: nowrap; font-family: inherit;
+}
+.btn:hover { background: var(--surface2); }
+.btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+
+.spacer { flex: 1; }
+
+#status { font-size: 12px; color: var(--text2); padding: 0 8px; transition: opacity var(--transition); white-space: nowrap; }
+
+/* ── Breadcrumb ── */
+#breadcrumb {
+  padding: 6px 16px; background: var(--surface); border-bottom: 1px solid var(--border);
+  font-size: 12px; color: var(--text2); font-family: "SF Mono", monospace;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 0;
+  min-height: 28px;
+}
+#breadcrumb span { cursor: default; }
+#breadcrumb span:hover { color: var(--accent); }
+#breadcrumb .sep { margin: 0 4px; opacity: .4; }
+
+#preview-frame { flex: 1; width: 100%; border: none; background: #fff; }
+
+/* ── Floating hints ── */
+.float-hint {
+  position: fixed; padding: 5px 10px; border-radius: 5px;
+  background: rgba(0,0,0,.75); color: #fff; font-size: 12px;
+  pointer-events: none; z-index: 99999; white-space: nowrap;
+  opacity: 0; transition: opacity .15s;
+}
+.float-hint.visible { opacity: 1; }
+
+/* ── Drop overlay ── */
+#drop-overlay {
+  position: absolute; inset: 0; z-index: 100;
+  display: none; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  background: rgba(0,113,227,.08); border: 2.5px dashed var(--accent);
+  border-radius: 8px; pointer-events: none;
+}
+#drop-overlay.active { display: flex; }
+#drop-overlay svg { width: 40px; height: 40px; color: var(--accent); }
+#drop-overlay span { font-size: 14px; font-weight: 500; color: var(--accent); }
+
+/* ── Style editor popover ── */
+#style-popover {
+  position: fixed; z-index: 99998; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; box-shadow: var(--shadow); padding: 12px; min-width: 260px;
+  display: none; font-size: 13px;
+}
+#style-popover.active { display: block; }
+#style-popover h4 { font-size: 12px; color: var(--text2); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .03em; }
+#style-popover .row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+#style-popover label { width: 70px; flex-shrink: 0; color: var(--text2); font-size: 12px; }
+#style-popover input[type="text"], #style-popover input[type="number"] {
+  flex: 1; padding: 4px 8px; border: 1px solid var(--border); border-radius: 5px;
+  background: var(--surface2); color: var(--text); font-size: 12px; font-family: "SF Mono", monospace; outline: none;
+}
+#style-popover input:focus { border-color: var(--accent); }
+#style-popover .row-actions { display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  #code-panel { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+  #app { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="code-panel">
+    <div id="drop-overlay">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
+      <span>释放以导入 HTML 文件</span>
+    </div>
+    <div class="panel-header">
+      <h2>HTML 源码</h2>
+      <button class="btn" id="btn-collapse" title="折叠面板">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+    </div>
+    <div id="code-wrap">
+      <div id="code-highlight" aria-hidden="true"></div>
+      <textarea id="code-input" spellcheck="false" placeholder="在此粘贴 HTML 代码，或拖入 .html 文件..."></textarea>
+    </div>
+  </div>
+
+  <div id="preview-panel">
+    <div id="toolbar">
+      <button class="btn" id="btn-expand" style="display:none" title="展开代码面板">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        <span>源码</span>
+      </button>
+      <button class="btn" id="btn-import" title="导入 HTML 文件">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
+        <span>导入</span>
+      </button>
+      <button class="btn" id="btn-refresh" title="重新渲染">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 105.64-11.36L3 10"/></svg>
+        <span>刷新</span>
+      </button>
+      <button class="btn" id="btn-undo" title="撤销 (Ctrl+Z)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 10h10a5 5 0 015 5v0a5 5 0 01-5 5H3"/><polyline points="7 6 3 10 7 14"/></svg>
+        <span>撤销</span>
+      </button>
+      <span id="status"></span>
+      <span class="spacer"></span>
+      <button class="btn btn-primary" id="btn-export">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span>导出网页</span>
+      </button>
+    </div>
+    <div id="breadcrumb"><span style="opacity:.4">hover 预览区元素查看路径</span></div>
+    <iframe id="preview-frame" sandbox="allow-same-origin allow-scripts"></iframe>
+  </div>
+</div>
+
+<div class="float-hint" id="img-hint">点击替换图片</div>
+
+<div id="style-popover">
+  <h4>样式编辑</h4>
+  <div id="style-rows"></div>
+  <div class="row-actions">
+    <button class="btn" id="style-close" style="padding:4px 12px;font-size:12px;">关闭</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const codePanel   = $('#code-panel');
+  const codeInput   = $('#code-input');
+  const codeHL      = $('#code-highlight');
+  const frame       = $('#preview-frame');
+  const btnCollapse = $('#btn-collapse');
+  const btnExpand   = $('#btn-expand');
+  const btnRefresh  = $('#btn-refresh');
+  const btnExport   = $('#btn-export');
+  const btnImport   = $('#btn-import');
+  const btnUndo     = $('#btn-undo');
+  const dropOverlay = $('#drop-overlay');
+  const statusEl    = $('#status');
+  const imgHint     = $('#img-hint');
+  const breadcrumb  = $('#breadcrumb');
+  const stylePop    = $('#style-popover');
+  const styleRows   = $('#style-rows');
+  const styleClose  = $('#style-close');
+
+  let debounceTimer = null;
+  let highlightLines = [];  // line numbers to highlight (0-based)
+  let styleTarget = null;   // element being style-edited
+
+  // ── Undo history ──
+  const history = [];
+  const MAX_HISTORY = 50;
+  let historyPaused = false;
+
+  function pushHistory() {
+    if (historyPaused) return;
+    const doc = frame.contentDocument;
+    if (!doc || !doc.body) return;
+    const snap = doc.documentElement.innerHTML;
+    if (history.length && history[history.length - 1] === snap) return;
+    history.push(snap);
+    if (history.length > MAX_HISTORY) history.shift();
+  }
+
+  function popHistory() {
+    if (history.length < 2) { showStatus('没有更多撤销'); return; }
+    history.pop(); // current state
+    const prev = history[history.length - 1];
+    const doc = frame.contentDocument;
+    if (!doc) return;
+    historyPaused = true;
+    doc.documentElement.innerHTML = prev;
+    historyPaused = false;
+    injectEditing();
+    showStatus('已撤销');
+  }
+
+  // ── Panel collapse / expand ──
+  btnCollapse.addEventListener('click', () => { codePanel.classList.add('collapsed'); btnExpand.style.display = ''; });
+  btnExpand.addEventListener('click', () => { codePanel.classList.remove('collapsed'); btnExpand.style.display = 'none'; });
+
+  // ── Status flash ──
+  function showStatus(msg) {
+    statusEl.textContent = msg;
+    statusEl.style.opacity = '1';
+    clearTimeout(statusEl._t);
+    statusEl._t = setTimeout(() => { statusEl.style.opacity = '0'; }, 2500);
+  }
+
+  // ── Source highlight layer ──
+  function updateHighlightLayer() {
+    const src = codeInput.value;
+    const lines = src.split('\n');
+    const hlSet = new Set(highlightLines);
+    const parts = lines.map((line, i) => {
+      const escaped = escapeHTML(line) || ' ';
+      return hlSet.has(i) ? `<span class="hl-line">${escaped}</span>` : escaped;
+    });
+    codeHL.innerHTML = parts.join('\n');
+  }
+
+  function escapeHTML(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // Sync scroll between textarea and highlight layer
+  codeInput.addEventListener('scroll', () => {
+    codeHL.scrollTop = codeInput.scrollTop;
+    codeHL.scrollLeft = codeInput.scrollLeft;
+  });
+
+  // ── Find element in source → line numbers ──
+  function findElementLines(el) {
+    if (!el || !el.tagName) return [];
+    const src = codeInput.value;
+    const lines = src.split('\n');
+    const tag = el.tagName.toLowerCase();
+    const text = (el.textContent || '').trim().substring(0, 40);
+    const cls = el.className && typeof el.className === 'string' ? el.className.split(/\s+/).filter(Boolean) : [];
+    const id = el.id || '';
+
+    let bestScore = 0, bestIdx = -1;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (!line.includes('<' + tag)) continue;
+      let score = 1;
+      if (id && line.includes(id)) score += 5;
+      cls.forEach(c => { if (line.includes(c)) score += 3; });
+      if (text && line.includes(text.substring(0, 20))) score += 2;
+      if (score > bestScore) { bestScore = score; bestIdx = i; }
+    }
+    if (bestIdx < 0) return [];
+    // Highlight a range around the match
+    const start = bestIdx;
+    let end = bestIdx;
+    // Try to find closing tag within a few lines
+    for (let j = bestIdx; j < Math.min(bestIdx + 15, lines.length); j++) {
+      if (lines[j].includes('</' + tag)) { end = j; break; }
+    }
+    const result = [];
+    for (let k = start; k <= end; k++) result.push(k);
+    return result;
+  }
+
+  function scrollCodeToLine(lineNum) {
+    const lineH = parseFloat(getComputedStyle(codeInput).lineHeight) || 20.8;
+    const target = lineNum * lineH - codeInput.clientHeight / 3;
+    codeInput.scrollTop = Math.max(0, target);
+    codeHL.scrollTop = codeInput.scrollTop;
+  }
+
+  // ── Breadcrumb path ──
+  function buildBreadcrumb(el) {
+    const parts = [];
+    let cur = el;
+    const doc = frame.contentDocument;
+    while (cur && cur !== doc.documentElement && cur !== doc) {
+      const tag = cur.tagName ? cur.tagName.toLowerCase() : '';
+      if (!tag) break;
+      let label = tag;
+      if (cur.id) label += '#' + cur.id;
+      else if (cur.className && typeof cur.className === 'string') {
+        const cls = cur.className.split(/\s+/).filter(Boolean).slice(0, 2).join('.');
+        if (cls) label += '.' + cls;
+      }
+      parts.unshift(label);
+      cur = cur.parentElement;
+    }
+    breadcrumb.innerHTML = parts.map(p => `<span>${escapeHTML(p)}</span>`).join('<span class="sep">&rsaquo;</span>');
+  }
+
+  // ── Render HTML into iframe ──
+  function renderPreview() {
+    const html = codeInput.value;
+    if (!html.trim()) {
+      frame.srcdoc = '<html><body style="display:flex;align-items:center;justify-content:center;height:100vh;color:#999;font-family:sans-serif;font-size:15px;">在左侧粘贴 HTML 代码以预览</body></html>';
+      highlightLines = [];
+      updateHighlightLayer();
+      return;
+    }
+    frame.srcdoc = html;
+    frame.onload = () => {
+      injectEditing();
+      history.length = 0;
+      pushHistory();
+      showStatus('已渲染');
+    };
+    updateHighlightLayer();
+  }
+
+  // ── Progress bar linkage ──
+  function detectProgressLinkage(el) {
+    // Pattern: element with percentage text whose parent has width style
+    // e.g. <div class="progress-fill" style="width: 85%;">85%</div>
+    const text = (el.textContent || '').trim();
+    const match = text.match(/^(\d+(?:\.\d+)?)\s*%$/);
+    if (!match) return null;
+
+    // Check if this element or parent has a width style with percentage
+    let target = el;
+    for (let i = 0; i < 3; i++) {
+      if (target.style && target.style.width && target.style.width.includes('%')) {
+        return { element: target, textEl: el };
+      }
+      if (target.parentElement) target = target.parentElement;
+      else break;
+    }
+    // Also check if the element itself has width
+    if (el.style && el.style.width && el.style.width.includes('%')) {
+      return { element: el, textEl: el };
+    }
+    return null;
+  }
+
+  function syncProgressBar(el) {
+    const text = (el.textContent || '').trim();
+    const match = text.match(/^(\d+(?:\.\d+)?)\s*%$/);
+    if (!match) return;
+    const val = Math.min(100, Math.max(0, parseFloat(match[1])));
+
+    // Find the element with width style
+    let target = el;
+    for (let i = 0; i < 3; i++) {
+      if (target.style && target.style.width && target.style.width.includes('%')) {
+        target.style.width = val + '%';
+        pushHistory();
+        showStatus('进度条已同步: ' + val + '%');
+        return;
+      }
+      if (target.parentElement) target = target.parentElement;
+      else break;
+    }
+    if (el.style && el.style.width) {
+      el.style.width = val + '%';
+      pushHistory();
+    }
+  }
+
+  // ── Style editor popover ──
+  function openStyleEditor(el, x, y) {
+    styleTarget = el;
+    const computed = frame.contentWindow.getComputedStyle(el);
+    const props = ['width', 'height', 'color', 'background-color', 'font-size', 'padding', 'margin', 'border-radius', 'opacity'];
+    styleRows.innerHTML = '';
+    props.forEach(prop => {
+      const val = el.style.getPropertyValue(prop) || '';
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.innerHTML = `<label>${prop}</label><input type="text" data-prop="${prop}" value="${escapeHTML(val)}" placeholder="${computed.getPropertyValue(prop)}">`;
+      styleRows.appendChild(row);
+    });
+    // Position
+    const pw = stylePop.offsetWidth || 260, ph = stylePop.offsetHeight || 300;
+    let left = x + 10, top = y + 10;
+    if (left + pw > window.innerWidth) left = x - pw - 10;
+    if (top + ph > window.innerHeight) top = y - ph - 10;
+    stylePop.style.left = Math.max(4, left) + 'px';
+    stylePop.style.top = Math.max(4, top) + 'px';
+    stylePop.classList.add('active');
+
+    // Live update on input
+    styleRows.querySelectorAll('input').forEach(inp => {
+      inp.addEventListener('input', () => {
+        if (!styleTarget) return;
+        const p = inp.dataset.prop;
+        const v = inp.value.trim();
+        if (v) styleTarget.style.setProperty(p, v);
+        else styleTarget.style.removeProperty(p);
+      });
+      inp.addEventListener('change', () => pushHistory());
+    });
+  }
+
+  function closeStyleEditor() {
+    stylePop.classList.remove('active');
+    styleTarget = null;
+  }
+  styleClose.addEventListener('click', closeStyleEditor);
+  document.addEventListener('mousedown', e => {
+    if (stylePop.classList.contains('active') && !stylePop.contains(e.target)) closeStyleEditor();
+  });
+
+  // ── Inject editing into iframe ──
+  function injectEditing() {
+    const doc = frame.contentDocument;
+    if (!doc) return;
+
+    const textTags = 'p, span, h1, h2, h3, h4, h5, h6, li, td, th, a, label, figcaption, blockquote, dt, dd, summary, caption, legend';
+    doc.querySelectorAll(textTags).forEach(el => {
+      el.setAttribute('contenteditable', 'true');
+      el.style.outline = 'none';
+      el.style.cursor = 'text';
+    });
+
+    // Divs with direct text
+    doc.querySelectorAll('div').forEach(el => {
+      for (const child of el.childNodes) {
+        if (child.nodeType === 3 && child.textContent.trim()) {
+          el.setAttribute('contenteditable', 'true');
+          el.style.outline = 'none';
+          el.style.cursor = 'text';
+          break;
+        }
+      }
+    });
+
+    // Editor styles
+    let edStyle = doc.getElementById('__editor_style__');
+    if (!edStyle) {
+      edStyle = doc.createElement('style');
+      edStyle.id = '__editor_style__';
+      doc.head.appendChild(edStyle);
+    }
+    edStyle.textContent = `
+      [contenteditable]:hover { outline: 1.5px dashed #0071e3 !important; outline-offset: 2px; border-radius: 3px; }
+      [contenteditable]:focus { outline: 2px solid #0071e3 !important; outline-offset: 2px; border-radius: 3px; }
+      img { cursor: pointer !important; transition: outline .15s; }
+      img:hover { outline: 2.5px solid #0071e3; outline-offset: 2px; border-radius: 3px; }
+    `;
+
+    // Image click-to-replace
+    doc.querySelectorAll('img').forEach(img => {
+      img.addEventListener('click', e => {
+        e.preventDefault(); e.stopPropagation();
+        replaceImage(img);
+      });
+    });
+
+    // Prevent link navigation
+    doc.querySelectorAll('a[href]').forEach(a => {
+      a.addEventListener('click', e => e.preventDefault());
+    });
+
+    // ── Hover → breadcrumb + source highlight ──
+    doc.addEventListener('mousemove', e => {
+      const target = e.target;
+      // Image hint
+      if (target.tagName === 'IMG') {
+        const rect = frame.getBoundingClientRect();
+        imgHint.style.left = (rect.left + e.clientX + 12) + 'px';
+        imgHint.style.top = (rect.top + e.clientY + 12) + 'px';
+        imgHint.classList.add('visible');
+      } else {
+        imgHint.classList.remove('visible');
+      }
+      // Breadcrumb
+      buildBreadcrumb(target);
+      // Source highlight
+      if (!codePanel.classList.contains('collapsed') && codeInput.value) {
+        const lines = findElementLines(target);
+        if (lines.length && (lines.join() !== highlightLines.join())) {
+          highlightLines = lines;
+          updateHighlightLayer();
+          scrollCodeToLine(lines[0]);
+        }
+      }
+    });
+
+    doc.addEventListener('mouseleave', () => {
+      imgHint.classList.remove('visible');
+      highlightLines = [];
+      updateHighlightLayer();
+      breadcrumb.innerHTML = '<span style="opacity:.4">hover 预览区元素查看路径</span>';
+    });
+
+    // ── Content edit → progress bar sync + history ──
+    doc.addEventListener('input', e => {
+      const el = e.target;
+      if (el.getAttribute('contenteditable') === 'true') {
+        syncProgressBar(el);
+        clearTimeout(doc._histTimer);
+        doc._histTimer = setTimeout(() => pushHistory(), 800);
+      }
+    });
+
+    // ── Right-click → style editor ──
+    doc.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      const rect = frame.getBoundingClientRect();
+      openStyleEditor(e.target, rect.left + e.clientX, rect.top + e.clientY);
+    });
+  }
+
+  // ── Replace image via file picker ──
+  function replaceImage(img) {
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = 'image/*';
+    input.onchange = () => {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => { img.src = e.target.result; pushHistory(); showStatus('图片已替换'); };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  }
+
+  // ── Export clean HTML ──
+  function exportHTML() {
+    const doc = frame.contentDocument;
+    if (!doc || !doc.documentElement) { showStatus('没有可导出的内容'); return; }
+    const clone = doc.documentElement.cloneNode(true);
+    const editorStyle = clone.querySelector('#__editor_style__');
+    if (editorStyle) editorStyle.remove();
+    clone.querySelectorAll('[contenteditable]').forEach(el => {
+      el.removeAttribute('contenteditable');
+      if (el.style.cursor === 'text') el.style.removeProperty('cursor');
+      if (el.style.outline === 'none') el.style.removeProperty('outline');
+      if (el.getAttribute('style') === '') el.removeAttribute('style');
+    });
+    const lang = clone.getAttribute('lang');
+    const fullHTML = '<!DOCTYPE html>\n<html' + (lang ? ' lang="' + lang + '"' : '') + '>\n' + clone.innerHTML + '\n</html>';
+    const blob = new Blob([fullHTML], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'edited_presentation.html'; a.click();
+    URL.revokeObjectURL(url);
+    showStatus('已导出 edited_presentation.html');
+  }
+
+  // ── Import ──
+  function importFile() {
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = '.html,.htm';
+    input.onchange = () => { if (input.files[0]) readHTMLFile(input.files[0]); };
+    input.click();
+  }
+  function readHTMLFile(file) {
+    if (!file.name.match(/\.html?$/i)) { showStatus('请选择 .html 文件'); return; }
+    const reader = new FileReader();
+    reader.onload = e => { codeInput.value = e.target.result; renderPreview(); showStatus('已导入 ' + file.name); };
+    reader.readAsText(file, 'utf-8');
+  }
+
+  // ── Drag and drop ──
+  let dragCounter = 0;
+  codePanel.addEventListener('dragenter', e => { e.preventDefault(); dragCounter++; dropOverlay.classList.add('active'); });
+  codePanel.addEventListener('dragleave', e => { e.preventDefault(); dragCounter--; if (dragCounter <= 0) { dragCounter = 0; dropOverlay.classList.remove('active'); } });
+  codePanel.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+  codePanel.addEventListener('drop', e => { e.preventDefault(); dragCounter = 0; dropOverlay.classList.remove('active'); if (e.dataTransfer.files[0]) readHTMLFile(e.dataTransfer.files[0]); });
+
+  // ── Event bindings ──
+  codeInput.addEventListener('input', () => { clearTimeout(debounceTimer); debounceTimer = setTimeout(renderPreview, 600); });
+  btnRefresh.addEventListener('click', renderPreview);
+  btnImport.addEventListener('click', importFile);
+  btnExport.addEventListener('click', exportHTML);
+  btnUndo.addEventListener('click', popHistory);
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); exportHTML(); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && document.activeElement !== codeInput) { e.preventDefault(); popHistory(); }
+  });
+
+  // Initial render
+  renderPreview();
+})();
+</script>
+</body>
+</html>
