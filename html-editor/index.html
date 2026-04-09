@@ -143,14 +143,34 @@ html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "SF P
 #style-popover input:focus { border-color: var(--accent); }
 #style-popover .row-actions { display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end; }
 
+/* ── Mobile back button ── */
+.mobile-back {
+  display: none;
+  position: fixed; top: 12px; left: 12px; z-index: 1000;
+  padding: 8px 14px; border-radius: 20px;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); font-size: 13px; font-weight: 500;
+  text-decoration: none; box-shadow: var(--shadow);
+}
+.mobile-back:hover { background: var(--surface2); }
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
+  .mobile-back { display: inline-flex; align-items: center; gap: 4px; }
   #code-panel { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
   #app { flex-direction: column; }
+  #toolbar { padding: 8px 12px; }
+  .btn { padding: 6px 10px; font-size: 12px; }
+  #code-panel .panel-header { padding: 10px 12px; }
+  #code-highlight, #code-input { padding: 12px; font-size: 12px; }
 }
 </style>
 </head>
 <body>
+<a href="../index.html" class="mobile-back">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+  返回
+</a>
 <div id="app">
   <div id="code-panel">
     <div id="drop-overlay">
