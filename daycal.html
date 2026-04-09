@@ -723,6 +723,21 @@
     <script>
         let direction = 1;
 
+        // 点击或获得焦点时全选文字，方便直接输入覆盖
+        function selectAllOnFocus(e) {
+            setTimeout(() => {
+                e.target.select();
+            }, 0);
+        }
+
+        // 初始化所有数字输入框的全选行为
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('input[type="number"]').forEach(el => {
+                el.addEventListener('click', selectAllOnFocus);
+                el.addEventListener('focus', selectAllOnFocus);
+            });
+        });
+
         // === 输入限制 ===
         function limitYear(el) {
             let v = el.value.replace(/\D/g, '');
