@@ -31,6 +31,8 @@ const Game = {
         waitingForRefuel: false,
         lastQuiz: null,
         lastAnswerCorrect: false,
+        quizCount: 0,  // 记录连续答题次数
+        collectibles: [],  // 掉落的金币
         // 玩家位置 - 自由移动
         playerX: 0,
         playerY: 0,
@@ -307,6 +309,7 @@ const Game = {
         this.state.serviceArea = null;
         this.state.junction = null;
         this.state.backgroundOffset = 0;
+        this.state.collectibles = [];  // 清空金币
 
         // 初始化当前路线（根据起点城市）
         ROAD_NETWORK_DATA.initRoute(this.state.currentCity);
@@ -371,10 +374,10 @@ const Game = {
         if (this.state.serviceAreaCooldown > 0) this.state.serviceAreaCooldown--;
         if (this.state.collisionCooldown > 0) this.state.collisionCooldown--;
 
-        // 尝试生成服务区
-        if (!this.state.serviceArea && this.state.serviceAreaCooldown <= 0 && Math.random() < 0.002) {
+        // 尝试生成服务区 - 更频繁
+        if (!this.state.serviceArea && this.state.serviceAreaCooldown <= 0 && Math.random() < 0.004) {
             this.spawnServiceArea();
-            this.state.serviceAreaCooldown = 300;
+            this.state.serviceAreaCooldown = 150; // 缩短冷却
         }
 
         // 尝试生成岔道
@@ -382,6 +385,9 @@ const Game = {
             this.spawnJunction();
             this.state.junctionCooldown = 400;
         }
+
+        // 尝试生成金币/积分
+        this.updateCollectibles();
 
         // 更新距离和油量
         this.state.distance += this.state.speed * 0.02;
@@ -398,8 +404,8 @@ const Game = {
             this.showTimeChange(newTimeOfDay);
         }
 
-        // 天气变换系统：每150公里变换一次天气（缩短距离）
-        if (distanceKm > 0 && distanceKm % 150 === 0 && this.state.lastWeatherDistance !== distanceKm) {
+        // 天气变换系统：每50公里变换一次天气（缩短距离，便于一局内体验）
+        if (distanceKm > 0 && distanceKm % 50 === 0 && this.state.lastWeatherDistance !== distanceKm) {
             this.state.lastWeatherDistance = distanceKm;
             this.updateWeather();
         }
@@ -562,6 +568,136 @@ const Game = {
             triggered: false
         };
         this.state.currentRoutes = routes.slice(0, 2);
+    },
+
+    // 生成金币/积分
+    spawnCollectible() {
+        // 随机车道
+        const lane = Math.floor(Math.random() * 3);
+        const x = this.state.lanes.positions[lane];
+        const y = -50;
+        const type = Math.random() < 0.7 ? 'coin' : 'gem'; // 70%金币，30%宝石
+
+        this.state.collectibles.push({
+            x: x,
+            y: y,
+            type: type,
+            value: type === 'coin' ? 5 : 15, // 金币5分，宝石15分
+            width: 30,
+            height: 30
+        });
+    },
+
+    // 更新金币
+    updateCollectibles() {
+        // 随机生成金币（每帧0.3%概率）
+        if (Math.random() < 0.003 && this.state.collectibles.length < 3) {
+            this.spawnCollectible();
+        }
+
+        // 更新位置和检测碰撞
+        for (let i = this.state.collectibles.length - 1; i >= 0; i--) {
+            const col = this.state.collectibles[i];
+            col.y += this.state.scrollSpeed;
+
+            // 检测碰撞（玩家吃到金币）
+            const pw = 50, ph = 75;
+            const px = this.state.playerX - pw/2;
+            const py = this.state.playerY - ph/2;
+
+            if (px < col.x + col.width/2 && px + pw > col.x - col.width/2 &&
+                py < col.y + col.height/2 && py + ph > col.y - col.height/2) {
+
+                // 吃到金币，加分
+                this.state.score += col.value;
+                this.state.totalScore += col.value;
+                this.showCollectiblePickup(col.value);
+
+                // 移除金币
+                this.state.collectibles.splice(i, 1);
+                continue;
+            }
+
+            // 移出屏幕删除
+            if (col.y > this.canvas.height + 50) {
+                this.state.collectibles.splice(i, 1);
+            }
+        }
+    },
+
+    // 显示金币拾取提示
+    showCollectiblePickup(value) {
+        const hint = document.createElement('div');
+        hint.style.cssText = `
+            position: fixed;
+            top: 40%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 215, 0, 0.9);
+            color: #8B4513;
+            padding: 8px 16px;
+            border-radius: 15px;
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 180;
+            animation: fadeOut 0.8s forwards;
+            pointer-events: none;
+        `;
+        hint.textContent = '+' + value;
+        document.body.appendChild(hint);
+        setTimeout(() => hint.remove(), 800);
+    },
+
+    // 绘制金币
+    drawCollectibles() {
+        const ctx = this.ctx;
+
+        this.state.collectibles.forEach(col => {
+            const x = col.x;
+            const y = col.y;
+            const w = col.width;
+            const h = col.height;
+
+            if (col.type === 'coin') {
+                // 金色圆形金币
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.arc(x, y, w/2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 金币高光
+                ctx.fillStyle = '#FFF8DC';
+                ctx.beginPath();
+                ctx.arc(x - 5, y - 5, 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 金币边框
+                ctx.strokeStyle = '#DAA520';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(x, y, w/2, 0, Math.PI * 2);
+                ctx.stroke();
+            } else {
+                // 宝石
+                ctx.fillStyle = '#FF69B4';
+                ctx.beginPath();
+                ctx.moveTo(x, y - h/2);
+                ctx.lineTo(x + w/2, y);
+                ctx.lineTo(x, y + h/2);
+                ctx.lineTo(x - w/2, y);
+                ctx.closePath();
+                ctx.fill();
+
+                // 宝石高光
+                ctx.fillStyle = '#FFC0CB';
+                ctx.beginPath();
+                ctx.moveTo(x - 3, y - 5);
+                ctx.lineTo(x + 3, y - 5);
+                ctx.lineTo(x, y);
+                ctx.closePath();
+                ctx.fill();
+            }
+        });
     },
 
     // 更新岔道
@@ -789,6 +925,7 @@ const Game = {
         this.drawBackground();
         this.drawServiceArea();
         this.drawJunction();
+        this.drawCollectibles();  // 绘制金币
         this.drawNPCCars();
         this.drawPlayerCar();
         this.drawWeatherEffect();
@@ -1422,9 +1559,22 @@ const Game = {
     // 关闭答题面板
     closeQuizPanel() {
         document.getElementById('quiz-panel').style.display = 'none';
+
+        // 如果答对了，连续答题次数+1，可以继续答下一题
+        if (this.state.lastAnswerCorrect) {
+            this.state.quizCount++;
+            if (this.state.quizCount < 2) {
+                // 继续答下一题
+                this.showQuiz();
+                return;
+            }
+        }
+
+        // 重置连续答题计数
+        this.state.quizCount = 0;
         this.state.paused = false;
         // 不删除服务区，让它继续往下移动直到离开屏幕
-        this.state.serviceAreaCooldown = 300;
+        this.state.serviceAreaCooldown = 150; // 缩短冷却
         Storage.save(this.state);
     },
 
