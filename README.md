@@ -59,27 +59,49 @@ legal-tools/
 
 ### UI 设计规范
 
-- **极简现代风**：干净、留白充足、无多余装饰
-- **移动端优先**：所有工具必须在手机上可用，优先适配 iPhone 竖屏比例
-- **无外部依赖**：不引入 CDN、不用 npm、不用框架
-- **单文件优先**：HTML + CSS + JS 写在一个 .html 文件中，除非复杂度确实需要拆分
-- **中文界面**：按钮、标签、提示等一律使用中文
-- **触摸友好**：按钮和输入框尺寸适合手指点击，间距合理
+新工具统一采用 **Claude 设计系统**（Google Stitch DESIGN.md 风格），确保视觉一致性和现代感。
 
-### 配色体系（浅色系）
+#### 设计原则
+
+- **温暖色调**：页面使用羊皮纸色 `#f5f4ed`（Parchment）作为背景，卡片使用米白色 `#faf9f5`（Ivory）
+- **品牌色**：主按钮使用陶土红 `#c96442`（Terracotta Brand）
+- **暖灰文字**：所有灰色必须是暖色调（黄褐底色），不用冷蓝灰
+- **圆角**：按钮 8-12px，卡片 8px，输入框 12px，保持柔和感
+- **阴影**：使用 ring shadow `0px 0px 0px 1px` 创造边框般深度，不使用厚重阴影
+
+#### 字体适配（中文字体）
 
 ```css
---bg-deep: #F0F1F5;           /* 页面背景 - 淡灰蓝 */
---bg-card: rgba(255, 255, 255, 0.88);  /* 卡片背景 */
---bg-input: rgba(240, 242, 248, 0.8);   /* 输入框背景 */
---text-primary: #1A1D2E;       /* 标题、正文 */
---text-secondary: rgba(60, 68, 90, 0.8); /* 说明文字 */
---accent: #4F6AF0;             /* 主色调 */
---accent-gradient: linear-gradient(135deg, #4F6AF0 0%, #9B6FE8 100%);
---border: rgba(80, 90, 130, 0.12);
---radius-lg: 20px;            /* 大卡片圆角 */
---radius-md: 14px;            /* 中等元素圆角 */
---radius-sm: 10px;            /* 小按钮圆角 */
+font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+```
+
+标题字体（衬线体）需支持中文：
+```css
+font-family: -apple-system, "Songti SC", "SimSun", Georgia, serif;
+```
+
+#### 移动端适配
+
+- 基础单位 8px
+- 卡片内边距 24-32px
+- 功能单元之间间距 18px
+- 触摸目标最小 44x44px
+- 响应式断点：<480px 单列布局
+
+#### 使用方法
+
+在项目根目录执行以下命令获取最新设计系统：
+```bash
+npx getdesign@latest add claude
+```
+然后参考生成的 `DESIGN.md` 文件进行开发。
+
+#### 旧版工具（蓝色系）
+
+早期工具使用蓝紫渐变配色体系，仅作为参考：
+```css
+--accent: #4F6AF0;
+--bg: linear-gradient(180deg, #EDF0F8 0%, #F0F1F5 100%);
 ```
 
 ### 页面模板
