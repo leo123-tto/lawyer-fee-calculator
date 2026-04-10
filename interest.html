@@ -1272,326 +1272,371 @@
     }
 
     const includeDelayedInterest = document.getElementById('delayed-interest').checked;
+    const multiCaseEnabled = document.getElementById('multi-case').checked;
 
-    // 整理案件数据
-    const caseData = [];
+    // 整理原始案件数据（不合并，只取有本金的案件）
+    const rawCases = [];
     for (const c of cases) {
       const principal = parseFloat(c.principal) || 0;
       if (principal <= 0) continue;
-
-      // 计算一般债务利息（从起算日到截止日）
-      const startDate = c.dueDate;
-      const endDate = c.endDate || new Date().toISOString().split('T')[0];
-      const rate = c.rateType === 'lpr' ? getLPRForDate(startDate, c.lprTerm) : parseFloat(c.rate) || 0;
-      const normalInterest = calculateInterestByPeriod(principal, startDate, endDate, c.rateType, c.rate, c.lprTerm);
-
-      // 迟延履行利息（加倍部分债务利息）
-      let doubleInterest = 0;
-      if (includeDelayedInterest && c.dueDate) {
-        const dueDate = c.dueDate;
-        const delayedEndDate = c.endDate || new Date().toISOString().split('T')[0];
-        const delayedDays = daysBetween(dueDate, delayedEndDate);
-        if (delayedDays > 0) {
-          // 加倍部分债务利息（日万分之1.75 = 0.0175% = 0.000175）
-          doubleInterest = principal * 0.000175 * delayedDays;
-        }
-      }
-
-      const lawyerFee = parseFloat(c.lawyerFee) || 0;
-      const litigationFee = parseFloat(c.litigationFee) || 0;
-      const otherFee = parseFloat(c.otherFee) || 0;
-      const totalFee = lawyerFee + litigationFee + otherFee;
-
-      caseData.push({
+      rawCases.push({
         id: c.id,
-        name: c.name || '案件' + (caseData.length + 1),
+        name: c.name || '案件' + (rawCases.length + 1),
         principal,
-        normalInterest,
-        doubleInterest,
-        fees: totalFee,
-        dueDate: c.dueDate,
-        endDate: c.endDate,
+        rate: c.rateType === 'lpr' ? (getLPRForDate(c.dueDate, c.lprTerm) || 3.65) : (parseFloat(c.rate) || 0),
         rateType: c.rateType,
-        rate: c.rate,
-        lprTerm: c.lprTerm
+        lprTerm: c.lprTerm,
+        startDate: c.dueDate || '',          // 一般债务利息起算日
+        endDate: c.endDate || new Date().toISOString().split('T')[0],
+        litigationFee: parseFloat(c.litigationFee) || 0,
+        lawyerFee: parseFloat(c.lawyerFee) || 0,
+        otherFee: parseFloat(c.otherFee) || 0
       });
     }
+    if (rawCases.length === 0) {
+      document.getElementById('execution-placeholder').style.display = '';
+      document.getElementById('execution-result').classList.remove('visible');
+      return;
+    }
 
-    // 处理还款（按法定顺序抵扣）
-    const sortedRepayments = [...repayments]
-      .filter(r => r.date && r.amount)
+    // 整理还款记录，按日期从早到晚排序
+    const sortedRepayments = repayments
+      .filter(r => r.date && r.amount && parseFloat(r.amount) > 0)
+      .map(r => ({ date: r.date, amount: parseFloat(r.amount) }))
       .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    let remainingRepayments = sortedRepayments.map(r => ({
-      date: r.date,
-      amount: parseFloat(r.amount) || 0,
-      remaining: parseFloat(r.amount) || 0
-    }));
+    // ================================================================
+    // 以下按照用户提供的五阶段逻辑实现
+    // ================================================================
 
-    // 按顺序抵扣每个案件
-    for (let caseIdx = 0; caseIdx < caseData.length && remainingRepayments.length > 0; caseIdx++) {
-      const cs = caseData[caseIdx];
+    /**
+     * 五阶段计算单个案件（或汇总案件组）的执行款
+     * @param {object} caseInfo - { principal, rate, startDate, endDate, litigationFee, lawyerFee, otherFee }
+     * @param {Array}  repayments - 排序后的还款记录
+     * @param {boolean} includeDelayed
+     * @returns {object} { remainingPrincipal, accumulatedInterest, accumulatedDelayed, remainingFees, steps }
+     */
+    function calcFiveStage(caseInfo, repayments, includeDelayed) {
+      // ---- 第一阶段：输入参数 ----
+      const principal0    = caseInfo.principal;  // 输入本金
+      const annualRate     = caseInfo.rate;        // 年利率（%）
+      const startDate      = caseInfo.startDate;   // 一般债务利息起算日
+      const endDate0       = caseInfo.endDate;    // 计算截止日
+      const litigationFee  = caseInfo.litigationFee;
+      const lawyerFee      = caseInfo.lawyerFee;
+      const otherFee       = caseInfo.otherFee;
+      const totalFees      = litigationFee + lawyerFee + otherFee;
 
-      for (let repIdx = 0; repIdx < remainingRepayments.length && remainingRepayments[repIdx].remaining > 0; repIdx++) {
-        const rep = remainingRepayments[repIdx];
+      // 日利率
+      const dailyRate = annualRate / 100 / 365;
+      // 迟延履行加倍利息日利率（万分之一）
+      const delayedDailyRate = 0.000175;
 
-        // 1. 先扣费用
-        if (cs.fees > 0 && rep.remaining > 0) {
-          const used = Math.min(cs.fees, rep.remaining);
-          cs.fees -= used;
-          rep.remaining -= used;
-        }
+      // ---- 第二阶段：初始化 ----
+      let remainingPrincipal   = principal0;   // 剩余本金
+      let accumulatedInterest  = 0;             // 已产生但尚未清偿的一般债务利息累计额
+      let remainingFees        = totalFees;      // 未付费用
+      let lastInterestDate     = startDate;      // 上次计息截止日
+      const steps = [];                          // 计算过程记录
 
-        // 2. 再扣利息（一般债务利息）
-        if (cs.normalInterest > 0 && rep.remaining > 0) {
-          const used = Math.min(cs.normalInterest, rep.remaining);
-          cs.normalInterest -= used;
-          rep.remaining -= used;
-        }
-
-        // 3. 再扣加倍利息（迟延履行期间）
-        if (includeDelayedInterest) {
-          if (cs.doubleInterest > 0 && rep.remaining > 0) {
-            const used = Math.min(cs.doubleInterest, rep.remaining);
-            cs.doubleInterest -= used;
-            rep.remaining -= used;
-          }
-        }
-
-        // 4. 最后扣本金
-        if (cs.principal > 0 && rep.remaining > 0) {
-          const used = Math.min(cs.principal, rep.remaining);
-          cs.principal -= used;
-          rep.remaining -= used;
-        }
-      }
-    }
-
-    // 汇总结果
-    let totalPrincipal = 0;
-    let totalNormalInterest = 0;
-    let totalDoubleInterest = 0;
-    let totalFees = 0;
-
-    const breakdownHtml = caseData.map(cs => {
-      totalPrincipal += cs.principal;
-      totalNormalInterest += cs.normalInterest;
-      totalDoubleInterest += cs.doubleInterest;
-      totalFees += cs.fees;
-
-      let html = `<div class="result-row"><span class="label">${cs.name}</span></div>`;
-      if (cs.principal > 0) {
-        html += `<div class="result-row" style="padding-left:10px;"><span class="label">本金</span><span class="value">${formatMoney(cs.principal)}</span></div>`;
-      }
-      if (cs.normalInterest > 0) {
-        html += `<div class="result-row" style="padding-left:10px;"><span class="label">一般利息</span><span class="value">${formatMoney(cs.normalInterest)}</span></div>`;
-      }
-      if (includeDelayedInterest && cs.doubleInterest > 0) {
-        html += `<div class="result-row" style="padding-left:10px;"><span class="label">加倍利息</span><span class="value">${formatMoney(cs.doubleInterest)}</span></div>`;
-      }
-      if (cs.fees > 0) {
-        html += `<div class="result-row" style="padding-left:10px;"><span class="label">费用</span><span class="value">${formatMoney(cs.fees)}</span></div>`;
-      }
-      return html;
-    }).join('');
-
-    const total = totalPrincipal + totalNormalInterest + totalDoubleInterest + totalFees;
-
-    // 显示结果
-    document.getElementById('execution-placeholder').style.display = 'none';
-    document.getElementById('execution-result').classList.add('visible');
-    document.getElementById('execution-total').textContent = formatMoney(total);
-
-    const detailRows = `
-      ${totalPrincipal > 0 ? `<div class="result-row"><span class="label">本金</span><span class="value">${formatMoney(totalPrincipal)}</span></div>` : ''}
-      ${totalNormalInterest > 0 ? `<div class="result-row"><span class="label">一般利息</span><span class="value">${formatMoney(totalNormalInterest)}</span></div>` : ''}
-      ${includeDelayedInterest && totalDoubleInterest > 0 ? `<div class="result-row"><span class="label">加倍利息</span><span class="value">${formatMoney(totalDoubleInterest)}</span></div>` : ''}
-      ${totalFees > 0 ? `<div class="result-row"><span class="label">费用</span><span class="value">${formatMoney(totalFees)}</span></div>` : ''}
-    `;
-    document.getElementById('execution-breakdown').innerHTML = detailRows + breakdownHtml;
-
-    // 生成计算过程详情
-    let execDetailHtml = '<div class="calc-detail-title">各案件计算过程</div>';
-    for (const cs of caseData) {
-      const startDate = cs.normalInterest > 0 ? (cs.dueDate || '—') : '—';
-      const endDate = cs.endDate || '—';
-      const days = daysBetween(startDate, endDate);
-      let caseDetails = `<div class="calc-step"><strong>案件: ${cs.name}</strong><br>`;
-
-      if (cs.principal > 0) {
-        caseDetails += `本金: ${formatMoney(cs.principal)}<br>`;
-      }
-      if (cs.normalInterest > 0) {
-        // 显示一般利息分段详情
-        if (cs.rateType === 'custom') {
-          const rate = parseFloat(cs.rate) || 0;
-          caseDetails += `一般利息: ${formatMoney(cs.normalInterest)}<br>`;
-          caseDetails += `<span class="formula">公式: ${formatMoney(cs.principal)} × ${rate}% ÷ 365天 × ${days}天</span><br>`;
-        } else {
-          // LPR利率 - 显示分段详情
-          caseDetails += `一般利息: ${formatMoney(cs.normalInterest)} (${startDate} ~ ${endDate}, ${days}天)<br>`;
-          caseDetails += `<span class="formula">分段明细:</span><br>`;
-
-          let lprDetails = '';
-          let currentDate = new Date(startDate);
-          let currentRate = getLPRForDate(startDate, cs.lprTerm) || 3.65;
-          let segStartDate = startDate;
-          let prevRate = currentRate;
-
-          for (let i = 0; i < LPR_DATA.length; i++) {
-            const lprDate = new Date(LPR_DATA[i].date);
-            if (lprDate <= new Date(startDate)) continue;
-            if (lprDate > new Date(endDate)) break;
-
-            const newRate = cs.lprTerm === '5y+' ? LPR_DATA[i].lpr5y : LPR_DATA[i].lpr1y;
-
-            if (Math.abs(newRate - prevRate) > 0.001) {
-              const segDays = daysBetween(segStartDate, lprDate.toISOString().split('T')[0]);
-              if (segDays > 0) {
-                const segInterest = cs.principal * prevRate / 100 / 365 * segDays;
-                lprDetails += `<div style="font-size:11px;padding-left:8px;opacity:0.8;">${segStartDate} ~ ${lprDate.toISOString().split('T')[0]}: LPR ${prevRate}% × ${segDays}天 = ${formatMoney(segInterest)}</div>`;
-              }
-              segStartDate = lprDate.toISOString().split('T')[0];
-              prevRate = newRate;
-            }
-            currentDate = lprDate;
-          }
-
-          // 最后一段
-          const lastDays = daysBetween(segStartDate, endDate);
-          if (lastDays > 0) {
-            const lastInterest = cs.principal * prevRate / 100 / 365 * lastDays;
-            lprDetails += `<div style="font-size:11px;padding-left:8px;opacity:0.8;">${segStartDate} ~ ${endDate}: LPR ${prevRate}% × ${lastDays}天 = ${formatMoney(lastInterest)}</div>`;
-          }
-          caseDetails += lprDetails;
-        }
-      }
-      if (includeDelayedInterest && cs.doubleInterest > 0) {
-        const delayedDays = daysBetween(cs.dueDate, cs.endDate || new Date().toISOString().split('T')[0]);
-        caseDetails += `加倍利息: ${formatMoney(cs.doubleInterest)} (本金 ${formatMoney(cs.principal)} × 0.0175% × ${delayedDays}天)<br>`;
-      }
-      if (cs.fees > 0) {
-        caseDetails += `费用: ${formatMoney(cs.fees)}<br>`;
-      }
-      caseDetails += `小计: ${formatMoney(cs.principal + cs.normalInterest + cs.doubleInterest + cs.fees)}</div>`;
-      execDetailHtml += caseDetails;
-    }
-
-    // 处理还款抵扣 - 按民法典561条新逻辑
-    if (sortedRepayments.length > 0) {
-      execDetailHtml += '<div class="calc-detail-title" style="margin-top:12px;">还款抵扣过程</div>';
-
-      // 复制案件数据用于计算（��留原始值用于显示）
-      const calcCaseData = caseData.map(c => ({
-        ...c,
-        originalPrincipal: c.principal,
-        originalNormalInterest: c.normalInterest,
-        originalDoubleInterest: c.doubleInterest,
-        originalFees: c.fees
-      }));
-
-      // 对每笔还款进行处理
-      for (let repIdx = 0; repIdx < sortedRepayments.length; repIdx++) {
-        const rep = sortedRepayments[repIdx];
+      // ---- 第三阶段：逐笔还款处理 ----
+      // 对每一笔还款（按日期从早到晚）：
+      // 1. 计算新增利息 = 剩余本金 × 日利率 × 天数
+      // 2. 累加到利息累计额
+      // 3. 拿还款金额，按法定顺序抵扣（费用 > 利息 > 本金）
+      // 4. 更新"上次计息截止日"
+      // 5. 记录抵扣明细
+      for (const rep of repayments) {
         const repDate = rep.date;
-        const repAmount = parseFloat(rep.amount) || 0;
+        const repAmount = rep.amount;
+
+        // 1) 计算从上次计息截止日到本次还款日的新增利息
+        const daysSinceLast = daysBetween(lastInterestDate, repDate);
+        const newInterest = remainingPrincipal * dailyRate * daysSinceLast;
+        accumulatedInterest += newInterest;
+
+        // 记录本次计息
+        const step = {
+          repDate,
+          repAmount,
+          daysSinceLast,
+          newInterest,
+          principalBefore: remainingPrincipal,
+          accumulatedInterestBefore: accumulatedInterest - newInterest,
+          deductions: []
+        };
+
+        // 2) 按法定顺序抵扣：费用 → 利息 → 本金
         let remaining = repAmount;
 
-        let deductionDetails = `<div class="calc-step"><strong>${repDate}: 还款 ${formatMoney(repAmount)}</strong><br>`;
-        deductionDetails += `--- 还款日各项金额 ---<br>`;
-
-        // 计算还款日当天的各项金额
-        for (const cs of calcCaseData) {
-          if (cs.principal <= 0 && cs.normalInterest <= 0 && cs.fees <= 0 && cs.doubleInterest <= 0) continue;
-
-          if (cs.principal > 0 || cs.normalInterest > 0 || cs.fees > 0) {
-            deductionDetails += `${cs.name}: 费用${formatMoney(cs.fees)} + 利息${formatMoney(cs.normalInterest)} + 本金${formatMoney(cs.principal)}<br>`;
-          }
+        // 优先抵扣：未付费用
+        if (remainingFees > 0 && remaining > 0) {
+          const used = Math.min(remainingFees, remaining);
+          remainingFees -= used;
+          remaining -= used;
+          step.deductions.push({ type: '费用', amount: used });
         }
 
-        deductionDetails += `--- 抵扣顺序（民法典561条）---<br>`;
-
-        // 按顺序抵扣
-        // 1. 先抵扣费用
-        for (const cs of calcCaseData) {
-          if (cs.fees > 0 && remaining > 0) {
-            const used = Math.min(cs.fees, remaining);
-            if (used > 0) {
-              deductionDetails += `扣费用: ${formatMoney(used)}<br>`;
-              cs.fees -= used;
-              remaining -= used;
-            }
-          }
+        // 优先抵扣：已累计的一般债务利息
+        if (accumulatedInterest > 0 && remaining > 0) {
+          const used = Math.min(accumulatedInterest, remaining);
+          accumulatedInterest -= used;
+          remaining -= used;
+          step.deductions.push({ type: '一般利息', amount: used });
         }
 
-        // 2. 再抵扣一般利息
-        for (const cs of calcCaseData) {
-          if (cs.normalInterest > 0 && remaining > 0) {
-            const used = Math.min(cs.normalInterest, remaining);
-            if (used > 0) {
-              deductionDetails += `扣一般利息: ${formatMoney(used)}<br>`;
-              cs.normalInterest -= used;
-              remaining -= used;
-            }
-          }
+        // 优先抵扣：本金
+        if (remainingPrincipal > 0 && remaining > 0) {
+          const used = Math.min(remainingPrincipal, remaining);
+          remainingPrincipal -= used;
+          remaining -= used;
+          step.deductions.push({ type: '本金', amount: used });
         }
 
-        // 3. 再抵扣加倍利息
-        if (includeDelayedInterest) {
-          for (const cs of calcCaseData) {
-            if (cs.doubleInterest > 0 && remaining > 0) {
-              const used = Math.min(cs.doubleInterest, remaining);
-              if (used > 0) {
-                deductionDetails += `扣加倍利息: ${formatMoney(used)}<br>`;
-                cs.doubleInterest -= used;
-                remaining -= used;
-              }
-            }
+        // 4) 更新"上次计息截止日"为本次还款日
+        lastInterestDate = repDate;
+
+        step.remainingFeesAfter = remainingFees;
+        step.accumulatedInterestAfter = accumulatedInterest;
+        step.remainingPrincipalAfter = remainingPrincipal;
+        steps.push(step);
+      }
+
+      // ---- 第四阶段：末段利息 ----
+      // 计算从最后还款日（或无还款则从起算日）到计算截止日的利息
+      const finalStartDate = repayments.length > 0
+        ? repayments[repayments.length - 1].date
+        : startDate;
+      const finalDays = daysBetween(finalStartDate, endDate0);
+      const finalInterest = remainingPrincipal * dailyRate * finalDays;
+      accumulatedInterest += finalInterest;
+
+      // ---- 第五阶段：迟延履行加倍利息 ----
+      // 从计算起始日到截止日，按还款日期分段计算
+      let accumulatedDelayed = 0;
+      if (includeDelayed) {
+        let delayedPrincipal = principal0;  // 迟延履行利息的剩余本金
+        let lastDelayedDate  = startDate;    // 迟延履行起算日
+
+        for (const rep of repayments) {
+          const repDate = rep.date;
+          // 迟延履行仅计算从起算日到截止日的区间
+          const segStart = lastDelayedDate;
+          const segEnd   = repDate;
+          const segDays   = daysBetween(segStart, segEnd);
+          if (segDays > 0) {
+            accumulatedDelayed += delayedPrincipal * delayedDailyRate * segDays;
           }
+
+          // 模拟抵扣（与第三阶段一致）：费用→利息→本金
+          let remaining = rep.amount;
+          // 扣费用（迟延履行期间费用不变）
+          const usedFee = Math.min(totalFees, remaining);
+          remaining -= usedFee;
+          // 扣一般利息
+          const usedInt = Math.min(accumulatedInterest, remaining);
+          remaining -= usedInt;
+          // 扣本金（迟延履行利息的计息基数随本金减少）
+          const usedPrin = Math.min(delayedPrincipal, remaining);
+          delayedPrincipal -= usedPrin;
+
+          lastDelayedDate = repDate;
         }
 
-        // 4. 最后抵扣本金
-        for (const cs of calcCaseData) {
-          if (cs.principal > 0 && remaining > 0) {
-            const used = Math.min(cs.principal, remaining);
-            if (used > 0) {
-              deductionDetails += `扣本金: ${formatMoney(used)}<br>`;
-              cs.principal -= used;
-              remaining -= used;
-            }
-          }
+        // 末段迟延利息（从最后还款日到截止日）
+        const lastRepDate = repayments.length > 0
+          ? repayments[repayments.length - 1].date
+          : startDate;
+        const lastDelayedDays = daysBetween(lastRepDate, endDate0);
+        if (lastDelayedDays > 0) {
+          accumulatedDelayed += delayedPrincipal * delayedDailyRate * lastDelayedDays;
         }
+      }
 
-        // 抵扣后继续计算利息（如果有剩余本金且有下一笔还款）
-        const nextRepDate = repIdx < sortedRepayments.length - 1 ? sortedRepayments[repIdx + 1].date : null;
-        if (nextRepDate && remaining <= 0) {
-          for (const cs of calcCaseData) {
-            if (cs.principal > 0) {
-              // 计算从本次还款日到下次还款日的新利息
-              const newInterest = calculateInterestByPeriod(cs.principal, repDate, nextRepDate, cs.rateType, cs.rate, cs.lprTerm);
-              cs.normalInterest += newInterest;
+      // ---- 第六阶段：汇总结果 ----
+      // 执行款总额 = 剩余本金 + 累计一般债务利息 + 累计加倍利息 + 未付费用
+      const total = remainingPrincipal + accumulatedInterest + accumulatedDelayed + remainingFees;
 
-              if (includeDelayedInterest) {
-                const delayedDays = daysBetween(repDate, nextRepDate);
-                cs.doubleInterest += cs.principal * 0.000175 * delayedDays;
-              }
-            }
-          }
-        }
+      return {
+        remainingPrincipal,
+        accumulatedInterest,
+        accumulatedDelayed,
+        remainingFees,
+        finalDays,
+        finalInterest,
+        total,
+        steps
+      };
+    }
 
-        deductionDetails += `--- 抵扣后剩余本金 ---<br>`;
-        for (const cs of calcCaseData) {
-          if (cs.principal > 0) {
-            deductionDetails += `${cs.name}: ${formatMoney(cs.principal)}<br>`;
-          }
-        }
+    // ================================================================
+    // 根据多案模式执行计算
+    // ================================================================
+    let finalBreakdown = [];  // 各案件的最终结果
+    let totalPrincipalSum  = 0;
+    let totalInterestSum    = 0;
+    let totalDelayedSum     = 0;
+    let totalFeesSum        = 0;
+    let totalResultSum      = 0;
 
-        deductionDetails += '</div>';
-        execDetailHtml += deductionDetails;
+    if (multiCaseEnabled) {
+      // ---- 多案合并计算 ----
+      // 汇总参数
+      const totalPrincipal = rawCases.reduce((s, c) => s + c.principal, 0);
+      const totalFeesVal   = rawCases.reduce((s, c) => s + c.litigationFee + c.lawyerFee + c.otherFee, 0);
+      // 取最早起算日、最晚截止日
+      const mergedStartDate = rawCases.map(c => c.startDate).filter(d => d).sort()[0] || '';
+      const mergedEndDate   = rawCases.map(c => c.endDate).filter(d => d).sort().reverse()[0] || new Date().toISOString().split('T')[0];
+      // 使用第一个案件的利率（多案共用同一日利率）
+      const mergedRate = rawCases[0].rate;
+
+      const merged = calcFiveStage({
+        principal: totalPrincipal,
+        rate: mergedRate,
+        startDate: mergedStartDate,
+        endDate: mergedEndDate,
+        litigationFee: rawCases.reduce((s, c) => s + c.litigationFee, 0),
+        lawyerFee:     rawCases.reduce((s, c) => s + c.lawyerFee, 0),
+        otherFee:      rawCases.reduce((s, c) => s + c.otherFee, 0)
+      }, sortedRepayments, includeDelayedInterest);
+
+      totalPrincipalSum = merged.remainingPrincipal;
+      totalInterestSum  = merged.accumulatedInterest;
+      totalDelayedSum   = merged.accumulatedDelayed;
+      totalFeesSum      = merged.remainingFees;
+      totalResultSum    = merged.total;
+
+      finalBreakdown.push({
+        name: '多案合并',
+        principal: totalPrincipal,
+        remainingPrincipal: merged.remainingPrincipal,
+        remainingFees: merged.remainingFees,
+        accumulatedInterest: merged.accumulatedInterest,
+        accumulatedDelayed: merged.accumulatedDelayed,
+        total: merged.total,
+        steps: merged.steps,
+        finalDays: merged.finalDays,
+        finalInterest: merged.finalInterest,
+        rawCases
+      });
+    } else {
+      // ---- 逐案独立计算 ----
+      for (const c of rawCases) {
+        const r = calcFiveStage({
+          principal: c.principal,
+          rate: c.rate,
+          startDate: c.startDate,
+          endDate: c.endDate,
+          litigationFee: c.litigationFee,
+          lawyerFee: c.lawyerFee,
+          otherFee: c.otherFee
+        }, sortedRepayments, includeDelayedInterest);
+
+        totalPrincipalSum += r.remainingPrincipal;
+        totalInterestSum  += r.accumulatedInterest;
+        totalDelayedSum   += r.accumulatedDelayed;
+        totalFeesSum      += r.remainingFees;
+        totalResultSum    += r.total;
+
+        finalBreakdown.push({
+          name: c.name,
+          principal: c.principal,
+          remainingPrincipal: r.remainingPrincipal,
+          remainingFees: r.remainingFees,
+          accumulatedInterest: r.accumulatedInterest,
+          accumulatedDelayed: r.accumulatedDelayed,
+          total: r.total,
+          steps: r.steps,
+          finalDays: r.finalDays,
+          finalInterest: r.finalInterest
+        });
       }
     }
 
-    document.getElementById('execution-calc-detail').innerHTML = execDetailHtml;
+    // ================================================================
+    // 生成对外展示（保持原有样式）
+    // ================================================================
+    document.getElementById('execution-placeholder').style.display = 'none';
+    document.getElementById('execution-result').classList.add('visible');
+    document.getElementById('execution-total').textContent = formatMoney(totalResultSum);
+
+    // 分项汇总
+    const summaryRows = `
+      ${totalPrincipalSum > 0 ? `<div class="result-row"><span class="label">剩余本金</span><span class="value">${formatMoney(totalPrincipalSum)}</span></div>` : ''}
+      ${totalInterestSum > 0 ? `<div class="result-row"><span class="label">一般债务利息</span><span class="value">${formatMoney(totalInterestSum)}</span></div>` : ''}
+      ${includeDelayedInterest && totalDelayedSum > 0 ? `<div class="result-row"><span class="label">迟延履行加倍利息</span><span class="value">${formatMoney(totalDelayedSum)}</span></div>` : ''}
+      ${totalFeesSum > 0 ? `<div class="result-row"><span class="label">未付费用</span><span class="value">${formatMoney(totalFeesSum)}</span></div>` : ''}
+    `;
+    document.getElementById('execution-breakdown').innerHTML = summaryRows;
+
+    // 生成详细计算过程
+    let detailHtml = '<div class="calc-detail-title">计算过程</div>';
+
+    for (const item of finalBreakdown) {
+      const rateVal = item.rawCases ? item.rawCases[0].rate : (
+        finalBreakdown.length === 1 ? (rawCases[0] ? rawCases[0].rate : 0) : 0
+      );
+      const startDate = item.rawCases
+        ? (item.rawCases.map(c => c.startDate).filter(d => d).sort()[0] || '')
+        : (rawCases.find(c => c.name === item.name) || {}).startDate || '';
+      const endDate = item.rawCases
+        ? (item.rawCases.map(c => c.endDate).filter(d => d).sort().reverse()[0] || '')
+        : (rawCases.find(c => c.name === item.name) || {}).endDate || '';
+      const annualRateDisplay = rateVal ? rateVal.toFixed(2) + '%' : '—';
+      const dailyRateDisplay  = rateVal ? (rateVal / 100 / 365).toFixed(6) + '%/天' : '—';
+
+      detailHtml += `<div class="calc-step"><strong>${item.name}</strong><br>`;
+      detailHtml += `本金: ${formatMoney(item.principal)}<br>`;
+      if (startDate && endDate) {
+        detailHtml += `期间: ${startDate} ~ ${endDate}（${daysBetween(startDate, endDate)}天）<br>`;
+      }
+      detailHtml += `年利率: ${annualRateDisplay}（日利率: ${dailyRateDisplay}）<br>`;
+      detailHtml += `<span class="formula">────── 第三阶段：逐笔还款处理 ──────</span><br>`;
+
+      if (item.steps.length === 0) {
+        detailHtml += `<span style="font-size:11px;opacity:0.7;">（无还款记录，跳过）</span><br>`;
+      } else {
+        for (const step of item.steps) {
+          const repNewInt = step.newInterest > 0
+            ? `<span class="formula">新增利息: ${formatMoney(step.newInterest)}</span><br>`
+            : '';
+          detailHtml += `<strong>${step.repDate} 还款 ${formatMoney(step.repAmount)}</strong> `;
+          detailHtml += `（距上次计息日 ${step.daysSinceLast}天，剩余本金 ${formatMoney(step.principalBefore)}）<br>`;
+          detailHtml += repNewInt;
+          for (const ded of step.deductions) {
+            detailHtml += `<span class="formula">→ 抵扣${ded.type}: ${formatMoney(ded.amount)}</span><br>`;
+          }
+          detailHtml += `抵扣后：费用${formatMoney(step.remainingFeesAfter)} + 利息${formatMoney(step.accumulatedInterestAfter)} + 本金${formatMoney(step.remainingPrincipalAfter)}<br>`;
+        }
+      }
+
+      detailHtml += `<span class="formula">────── 第四阶段：末段利息 ──────</span><br>`;
+      if (item.finalDays > 0) {
+        const finalRate = rateVal / 100 / 365;
+        detailHtml += `<span class="formula">末段: ${formatMoney(item.remainingPrincipal)} × ${finalRate.toFixed(6)} × ${item.finalDays}天 = ${formatMoney(item.finalInterest)}</span><br>`;
+      } else {
+        detailHtml += `<span class="formula">（无需计算末段利息）</span><br>`;
+      }
+
+      if (includeDelayedInterest) {
+        detailHtml += `<span class="formula">────── 第五阶段：迟延履行加倍利息 ──────</span><br>`;
+        detailHtml += `<span class="formula">日利率: 0.000175（万分之一/天）</span><br>`;
+        detailHtml += `累计加倍利息: ${formatMoney(item.accumulatedDelayed)}<br>`;
+      }
+
+      detailHtml += `<span class="formula">────── 第六阶段：汇总 ──────</span><br>`;
+      detailHtml += `剩余本金: ${formatMoney(item.remainingPrincipal)}<br>`;
+      detailHtml += `一般利息: ${formatMoney(item.accumulatedInterest)}<br>`;
+      if (includeDelayedInterest) {
+        detailHtml += `加倍利息: ${formatMoney(item.accumulatedDelayed)}<br>`;
+      }
+      if (item.remainingFees > 0) {
+        detailHtml += `未付费用: ${formatMoney(item.remainingFees)}<br>`;
+      }
+      detailHtml += `<strong>小计: ${formatMoney(item.total)}</strong><br></div>`;
+    }
+
+    document.getElementById('execution-calc-detail').innerHTML = detailHtml;
   }
 
   // 弹窗
