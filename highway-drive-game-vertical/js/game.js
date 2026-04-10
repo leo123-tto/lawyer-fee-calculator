@@ -12,7 +12,8 @@ const Game = {
         totalDistance: 0,
         score: 0,
         totalScore: 0,
-        speed: 3,  // 基础速度
+        gameSpeed: 3,  // 游戏速度（由难度决定）
+        baseSpeed: 3,  // 基础速度
         scrollSpeed: 2, // 背景滚动速度
         timeOfDay: '清晨',  // 当前时段
         weather: '晴',
@@ -129,6 +130,14 @@ const Game = {
 
     // 绑定事件
     bindEvents() {
+        // 难度选择
+        document.querySelectorAll('.difficulty-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+
         document.getElementById('start-btn').addEventListener('click', () => this.showGuide());
         document.getElementById('garage-btn').addEventListener('click', () => UI.openGarage());
         document.getElementById('close-garage').addEventListener('click', () => UI.closeGarage());
@@ -284,6 +293,12 @@ const Game = {
 
     // 开始游戏
     start() {
+        // 获取难度设置的速度
+        const activeBtn = document.querySelector('.difficulty-btn.active');
+        const speed = activeBtn ? parseInt(activeBtn.dataset.speed) : 3;
+        this.state.baseSpeed = speed;
+        this.state.gameSpeed = speed;
+
         document.getElementById('start-screen').style.display = 'none';
         document.getElementById('in-game-exit').style.display = 'block';
         document.getElementById('sound-control').style.display = 'block';
@@ -390,8 +405,8 @@ const Game = {
         this.updateCollectibles();
 
         // 更新距离和油量
-        this.state.distance += this.state.speed * 0.02;
-        const fuelUsed = this.state.speed * 0.04 / this.state.consumption;  // 油耗加快4倍
+        this.state.distance += this.state.gameSpeed * 0.02;
+        const fuelUsed = this.state.gameSpeed * 0.04 / this.state.consumption;  // 油耗加快4倍
         this.state.fuel = Math.max(0, this.state.fuel - fuelUsed);
 
         // 时间变换系统：每100公里变换一次时段（缩短距离）
@@ -483,8 +498,24 @@ const Game = {
 
         const lane = availableLanes[Math.floor(Math.random() * availableLanes.length)];
         const x = this.state.lanes.positions[lane];
-        const colors = ['#E74C3C', '#3498DB', '#2ECC71', '#F39C12', '#9B59B6', '#E67E22', '#16A085', '#D35400'];
-        const color = colors[Math.floor(Math.random() * colors.length)];
+
+        // 随机选择车型，每种车型有不同外观
+        const carTypes = [
+            { color: '#E74C3C', type: 'sedan' },    // 红色轿车
+            { color: '#3498DB', type: 'sedan' },    // 蓝色轿车
+            { color: '#2ECC71', type: 'sedan' },    // 绿色轿车
+            { color: '#F39C12', type: 'sedan' },    // 橙色轿车
+            { color: '#9B59B6', type: 'sedan' },    // 紫色轿车
+            { color: '#E67E22', type: 'sedan' },    // 橙色SUV
+            { color: '#16A085', type: 'sedan' },    // 青色SUV
+            { color: '#D35400', type: 'sedan' },    // 棕色SUV
+            { color: '#FFFFFF', type: 'white' },    // 白色轿车
+            { color: '#C0C0C0', type: 'silver' },   // 银色轿车
+            { color: '#FFD700', type: 'taxi' },     // 黄色出租车
+            { color: '#1ABC9C', type: 'truck' },    // 青色小货车
+            { color: '#8E44AD', type: 'sports' },  // 紫色跑车
+        ];
+        const carType = carTypes[Math.floor(Math.random() * carTypes.length)];
 
         // 速度比背景滚动稍快一点
         const speed = this.state.scrollSpeed + 0.5 + Math.random() * 1.5;
@@ -494,13 +525,14 @@ const Game = {
             y: -100,
             width: 50,
             height: 80,
-            color: color,
+            color: carType.color,
+            type: carType.type,
             speed: speed,
             lane: lane
         });
     },
 
-    // 生成服务区 - 使用真实名称，按路线顺序
+    // 生成服务区 - 使用真实名称，按路线顺序，不同服务区不同风格
     spawnServiceArea() {
         // 从路网获取下一个服务区（按真实顺序）
         const serviceArea = ROAD_NETWORK_DATA.getNextServiceArea();
@@ -509,12 +541,17 @@ const Game = {
         const cityName = serviceArea.city;
         const city = ROAD_NETWORK_DATA.cities[cityName];
 
+        // 随机分配服务区风格
+        const styles = ['chinese', 'modern', 'european'];
+        const style = styles[Math.floor(Math.random() * styles.length)];
+
         this.state.serviceArea = {
             y: -250,
             triggered: false,
             name: serviceArea.name,
             desc: `${serviceArea.name}·${cityName}`,
-            distance: serviceArea.distance
+            distance: serviceArea.distance,
+            style: style
         };
     },
 
@@ -1071,6 +1108,60 @@ const Game = {
             }
         }
 
+        // 远景风车 - 间隔出现
+        const windmillOffset = Math.floor(this.state.backgroundOffset * 0.15) % 400;
+        for (let i = 0; i < 3; i++) {
+            const wx = 40 + i * 120;
+            const wy = ((i * 200 - windmillOffset + 100) % (this.canvas.height + 100)) - 80;
+            if (wy > -100 && wy < this.canvas.height * 0.6) {
+                // 塔架
+                ctx.fillStyle = '#F5F5F5';
+                ctx.beginPath();
+                ctx.moveTo(wx - 8, wy + 60);
+                ctx.lineTo(wx + 8, wy + 60);
+                ctx.lineTo(wx + 4, wy);
+                ctx.lineTo(wx - 4, wy);
+                ctx.closePath();
+                ctx.fill();
+                // 叶片 - 缓慢旋转
+                const rotation = (this.state.backgroundOffset * 0.02 + i) % (Math.PI * 2);
+                ctx.save();
+                ctx.translate(wx, wy);
+                ctx.rotate(rotation);
+                ctx.fillStyle = '#E8E8E8';
+                for (let j = 0; j < 4; j++) {
+                    ctx.fillRect(-2, -30, 4, 25);
+                    ctx.rotate(Math.PI / 2);
+                }
+                ctx.restore();
+            }
+        }
+
+        // 远景山脉
+        const mountainOffset = Math.floor(this.state.backgroundOffset * 0.1) % 300;
+        // 左侧山脉
+        ctx.fillStyle = '#5A6F7F';
+        ctx.beginPath();
+        ctx.moveTo(-20, this.canvas.height);
+        for (let x = -20; x <= 150; x += 30) {
+            const my = 120 + Math.sin((x + mountainOffset) * 0.03) * 40 + Math.sin((x + mountainOffset) * 0.07) * 20;
+            ctx.lineTo(x, my);
+        }
+        ctx.lineTo(150, this.canvas.height);
+        ctx.closePath();
+        ctx.fill();
+        // 右侧山脉
+        ctx.fillStyle = '#4A5F6F';
+        ctx.beginPath();
+        ctx.moveTo(this.canvas.width - 150, this.canvas.height);
+        for (let x = this.canvas.width - 150; x <= this.canvas.width + 20; x += 30) {
+            const my = 100 + Math.sin((x - mountainOffset * 0.8) * 0.035) * 35 + Math.sin((x - mountainOffset * 0.6) * 0.06) * 15;
+            ctx.lineTo(x, my);
+        }
+        ctx.lineTo(this.canvas.width + 20, this.canvas.height);
+        ctx.closePath();
+        ctx.fill();
+
         // 道路 - 深灰色沥青带质感
         ctx.fillStyle = '#505050';
         ctx.fillRect(this.road.roadLeft, 0, this.road.roadRight - this.road.roadLeft, this.canvas.height);
@@ -1103,12 +1194,13 @@ const Game = {
         ctx.setLineDash([]);
     },
 
-    // 绘制服务区 - 更卡通可爱
+    // 绘制服务区 - 三种不同风格
     drawServiceArea() {
         if (!this.state.serviceArea) return;
 
         const ctx = this.ctx;
         const sa = this.state.serviceArea;
+        const style = sa.style || 'chinese';
 
         // 服务区位置在道路右侧
         const serviceX = this.road.roadRight + 20;
@@ -1143,61 +1235,144 @@ const Game = {
         ctx.closePath();
         ctx.fill();
 
-        // === 服务区主建筑 ===
+        // === 根据风格绘制不同建筑 ===
         const buildingWidth = serviceWidth - 15;
         const buildingX = serviceX + 8;
         const buildingY = baseY + 30;
         const buildingHeight = 120;
 
-        // 建筑阴影
-        ctx.fillStyle = 'rgba(0,0,0,0.1)';
-        ctx.fillRect(buildingX + 3, buildingY + 3, buildingWidth, buildingHeight);
+        if (style === 'chinese') {
+            // 中式风格 - 橙色屋顶，飞檐
+            ctx.fillStyle = 'rgba(0,0,0,0.1)';
+            ctx.fillRect(buildingX + 3, buildingY + 3, buildingWidth, buildingHeight);
 
-        // 建筑主体 - 米白色
-        ctx.fillStyle = '#FDFEFE';
-        this.roundRect(ctx, buildingX, buildingY, buildingWidth, buildingHeight, 5);
+            // 建筑主体 - 米白色
+            ctx.fillStyle = '#FDFEFE';
+            this.roundRect(ctx, buildingX, buildingY, buildingWidth, buildingHeight, 5);
 
-        // 橙色屋顶
-        ctx.fillStyle = '#E74C3C';
-        ctx.beginPath();
-        ctx.moveTo(buildingX - 5, buildingY);
-        ctx.lineTo(buildingX + buildingWidth / 2, buildingY - 20);
-        ctx.lineTo(buildingX + buildingWidth + 5, buildingY);
-        ctx.closePath();
-        ctx.fill();
+            // 橙色屋顶
+            ctx.fillStyle = '#E74C3C';
+            ctx.beginPath();
+            ctx.moveTo(buildingX - 5, buildingY);
+            ctx.lineTo(buildingX + buildingWidth / 2, buildingY - 20);
+            ctx.lineTo(buildingX + buildingWidth + 5, buildingY);
+            ctx.closePath();
+            ctx.fill();
 
-        // 屋顶边缘
-        ctx.strokeStyle = '#C0392B';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(buildingX - 5, buildingY);
-        ctx.lineTo(buildingX + buildingWidth / 2, buildingY - 20);
-        ctx.lineTo(buildingX + buildingWidth + 5, buildingY);
-        ctx.stroke();
-
-        // 窗户 - 蓝色
-        ctx.fillStyle = '#85C1E9';
-        const windowSize = 22;
-        for (let i = 0; i < 3; i++) {
-            const wx = buildingX + 20 + i * (buildingWidth / 3.2);
-            this.roundRect(ctx, wx, buildingY + 20, windowSize, windowSize, 3);
-            // 窗框
-            ctx.strokeStyle = '#5D6D7E';
+            // 屋顶边缘
+            ctx.strokeStyle = '#C0392B';
             ctx.lineWidth = 2;
-            ctx.strokeRect(wx, buildingY + 20, windowSize, windowSize);
+            ctx.beginPath();
+            ctx.moveTo(buildingX - 5, buildingY);
+            ctx.lineTo(buildingX + buildingWidth / 2, buildingY - 20);
+            ctx.lineTo(buildingX + buildingWidth + 5, buildingY);
+            ctx.stroke();
+
+            // 窗户 - 蓝色
+            ctx.fillStyle = '#85C1E9';
+            const windowSize = 22;
+            for (let i = 0; i < 3; i++) {
+                const wx = buildingX + 20 + i * (buildingWidth / 3.2);
+                this.roundRect(ctx, wx, buildingY + 20, windowSize, windowSize, 3);
+                ctx.strokeStyle = '#5D6D7E';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(wx, buildingY + 20, windowSize, windowSize);
+            }
+
+            // 门 - 棕色
+            ctx.fillStyle = '#8B4513';
+            const doorWidth = 28;
+            const doorHeight = 40;
+            this.roundRect(ctx, buildingX + buildingWidth / 2 - doorWidth / 2, buildingY + buildingHeight - doorHeight - 5, doorWidth, doorHeight, 3);
+
+            // 门把手
+            ctx.fillStyle = '#F4D03F';
+            ctx.beginPath();
+            ctx.arc(buildingX + buildingWidth / 2 + 5, buildingY + buildingHeight - 25, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+        } else if (style === 'modern') {
+            // 现代风格 - 蓝色玻璃幕墙，平顶
+            ctx.fillStyle = 'rgba(0,0,0,0.1)';
+            ctx.fillRect(buildingX + 3, buildingY + 3, buildingWidth, buildingHeight);
+
+            // 建筑主体 - 浅蓝色玻璃
+            ctx.fillStyle = '#AED6F1';
+            this.roundRect(ctx, buildingX, buildingY, buildingWidth, buildingHeight, 3);
+
+            // 蓝色玻璃幕墙效果
+            ctx.fillStyle = '#5DADE2';
+            ctx.fillRect(buildingX + 10, buildingY + 10, buildingWidth - 20, buildingHeight - 30);
+
+            // 玻璃反光条纹
+            ctx.fillStyle = '#85C1E9';
+            for (let i = 0; i < 4; i++) {
+                ctx.fillRect(buildingX + 15 + i * 20, buildingY + 15, 8, buildingHeight - 40);
+            }
+
+            // 平屋顶
+            ctx.fillStyle = '#3498DB';
+            ctx.fillRect(buildingX - 3, buildingY - 8, buildingWidth + 6, 12);
+
+            // 门 - 银色
+            ctx.fillStyle = '#BDC3C7';
+            const doorWidth = 30;
+            const doorHeight = 45;
+            this.roundRect(ctx, buildingX + buildingWidth / 2 - doorWidth / 2, buildingY + buildingHeight - doorHeight - 5, doorWidth, doorHeight, 3);
+
+        } else if (style === 'european') {
+            // 欧式风格 - 红色屋顶，圆顶塔楼
+            ctx.fillStyle = 'rgba(0,0,0,0.1)';
+            ctx.fillRect(buildingX + 3, buildingY + 3, buildingWidth, buildingHeight);
+
+            // 建筑主体 - 奶白色
+            ctx.fillStyle = '#FAF3E0';
+            this.roundRect(ctx, buildingX, buildingY, buildingWidth - 30, buildingHeight, 5);
+
+            // 红色坡屋顶
+            ctx.fillStyle = '#922B21';
+            ctx.beginPath();
+            ctx.moveTo(buildingX - 5, buildingY + 30);
+            ctx.lineTo(buildingX + buildingWidth / 2 - 15, buildingY - 15);
+            ctx.lineTo(buildingX + buildingWidth - 30, buildingY + 30);
+            ctx.closePath();
+            ctx.fill();
+
+            // 塔楼 - 圆形穹顶
+            ctx.fillStyle = '#D4AC0D';
+            ctx.beginPath();
+            ctx.arc(buildingX + buildingWidth / 2 - 15, buildingY + 10, 15, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 塔楼窗户
+            ctx.fillStyle = '#85C1E9';
+            ctx.beginPath();
+            ctx.arc(buildingX + buildingWidth / 2 - 15, buildingY + 5, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 窗户 - 拱形
+            ctx.fillStyle = '#85C1E9';
+            for (let i = 0; i < 2; i++) {
+                const wx = buildingX + 20 + i * (buildingWidth / 2.5);
+                // 拱形窗户
+                ctx.beginPath();
+                ctx.moveTo(wx, buildingY + 25);
+                ctx.lineTo(wx, buildingY + 45);
+                ctx.quadraticCurveTo(wx + 12, buildingY + 55, wx + 24, buildingY + 45);
+                ctx.lineTo(wx + 24, buildingY + 25);
+                ctx.closePath();
+                ctx.fill();
+                ctx.strokeStyle = '#5D6D7E';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            // 门 - 深棕色
+            ctx.fillStyle = '#5D4037';
+            const doorWidth = 28;
+            const doorHeight = 45;
+            this.roundRect(ctx, buildingX + buildingWidth / 2 - 45, buildingY + buildingHeight - doorHeight - 5, doorWidth, doorHeight, 5);
         }
-
-        // 门 - 棕色
-        ctx.fillStyle = '#8B4513';
-        const doorWidth = 28;
-        const doorHeight = 40;
-        this.roundRect(ctx, buildingX + buildingWidth / 2 - doorWidth / 2, buildingY + buildingHeight - doorHeight - 5, doorWidth, doorHeight, 3);
-
-        // 门把手
-        ctx.fillStyle = '#F4D03F';
-        ctx.beginPath();
-        ctx.arc(buildingX + buildingWidth / 2 + 5, buildingY + buildingHeight - 25, 3, 0, Math.PI * 2);
-        ctx.fill();
 
         // === 服务区招牌 ===
         const signWidth = serviceWidth - 25;
@@ -1324,18 +1499,59 @@ const Game = {
             ctx.fillStyle = 'rgba(0,0,0,0.25)';
             ctx.fillRect(x + 3, y + 3, w, h);
 
-            // 车身
-            ctx.fillStyle = npc.color;
-            this.roundRect(ctx, x, y, w, h, 5);
+            // 根据车型调整绘制
+            if (npc.type === 'truck') {
+                // 货车 - 更高更长
+                ctx.fillStyle = npc.color;
+                this.roundRect(ctx, x, y, w, h + 10, 5);
+                // 车厢
+                ctx.fillStyle = this.darkenColor(npc.color, 10);
+                ctx.fillRect(x + 5, y + 15, w - 10, h - 5);
+                // 驾驶室
+                ctx.fillStyle = npc.color;
+                ctx.fillRect(x + 5, y, w - 10, 18);
+            } else if (npc.type === 'taxi') {
+                // 出租车 - 有顶灯
+                ctx.fillStyle = npc.color;
+                this.roundRect(ctx, x, y, w, h, 5);
+                ctx.fillStyle = this.darkenColor(npc.color, 15);
+                this.roundRect(ctx, x + 5, y + 10, w - 10, h - 20, 3);
+                // 顶灯
+                ctx.fillStyle = '#FFD700';
+                ctx.fillRect(x + w/2 - 8, y - 3, 16, 5);
+                ctx.strokeStyle = '#CC9900';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x + w/2 - 8, y - 3, 16, 5);
+            } else if (npc.type === 'sports') {
+                // 跑车 - 更低更流线型
+                ctx.fillStyle = npc.color;
+                this.roundRect(ctx, x, y, w, h, 8);
+                ctx.fillStyle = this.darkenColor(npc.color, 20);
+                this.roundRect(ctx, x + 4, y + 12, w - 8, h - 24, 4);
+                // 运动型挡风玻璃
+                ctx.fillStyle = '#1a1a1a';
+                ctx.beginPath();
+                ctx.moveTo(x + 6, y + 4);
+                ctx.lineTo(x + w - 6, y + 4);
+                ctx.lineTo(x + w - 8, y + 12);
+                ctx.lineTo(x + 8, y + 12);
+                ctx.closePath();
+                ctx.fill();
+            } else {
+                // 普通轿车
+                ctx.fillStyle = npc.color;
+                this.roundRect(ctx, x, y, w, h, 5);
+                // 车顶
+                ctx.fillStyle = this.darkenColor(npc.color, 15);
+                this.roundRect(ctx, x + 5, y + 10, w - 10, h - 20, 3);
+            }
 
-            // 车顶
-            ctx.fillStyle = this.darkenColor(npc.color, 15);
-            this.roundRect(ctx, x + 5, y + 10, w - 10, h - 20, 3);
-
-            // 挡风玻璃
-            ctx.fillStyle = '#2C3E50';
-            ctx.fillRect(x + 7, y + 3, w - 14, 10);
-            ctx.fillRect(x + 7, y + h - 13, w - 14, 10);
+            // 挡风玻璃（除特殊车型外）
+            if (npc.type !== 'sports') {
+                ctx.fillStyle = '#2C3E50';
+                ctx.fillRect(x + 7, y + 3, w - 14, 10);
+                ctx.fillRect(x + 7, y + h - 13, w - 14, 10);
+            }
 
             // 后车灯（红色，朝向玩家）
             ctx.fillStyle = '#E74C3C';

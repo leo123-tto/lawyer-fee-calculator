@@ -413,6 +413,46 @@ body {
     gap: 20px;
 }
 
+/* 难度选择 */
+#difficulty-select {
+    margin: 25px auto;
+    text-align: center;
+}
+
+#difficulty-label {
+    color: #4ecca3;
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 12px;
+}
+
+#difficulty-options {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+
+.difficulty-btn {
+    padding: 10px 20px;
+    font-size: 16px;
+    border: 3px solid #4ecca3;
+    background: rgba(0,0,0,0.5);
+    color: #fff;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.difficulty-btn:hover {
+    background: rgba(78, 204, 163, 0.2);
+}
+
+.difficulty-btn.active {
+    background: #4ecca3;
+    color: #1a1a2e;
+    font-weight: bold;
+}
+
 /* 服务区提示 */
 #service-area-alert {
     position: absolute;
