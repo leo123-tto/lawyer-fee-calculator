@@ -130,7 +130,13 @@ const Game = {
 
     // 绑定事件
     bindEvents() {
-        // 难度选择
+        // 难度选择按钮 - 展开/收起难度菜单
+        document.getElementById('difficulty-btn').addEventListener('click', () => {
+            const select = document.getElementById('difficulty-select');
+            select.style.display = select.style.display === 'none' ? 'block' : 'none';
+        });
+
+        // 难度选项选择
         document.querySelectorAll('.difficulty-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('active'));
