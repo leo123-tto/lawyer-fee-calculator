@@ -186,12 +186,175 @@ const ROAD_NETWORK_DATA = {
                 { name: '梅村服务区', city: '无锡', distance: 15 },
             ]
         },
+
+        // ===== G15 沈海高速 =====
+        // 沈阳 → 上海（南行）
+        'G15_沈阳_上海': {
+            highway: 'G15',
+            name: '沈海高速',
+            direction: '上海方向',
+            cities: ['沈阳', '鞍山', '大连', '烟台', '青岛', '日照', '连云港', '盐城', '南通', '上海'],
+            serviceAreas: [
+                // 辽宁段
+                { name: '井泉服务区', city: '沈阳', distance: 30 },
+                { name: '甘泉服务区', city: '鞍山', distance: 80 },
+                { name: '大连服务区', city: '大连', distance: 40 },
+                // 烟台-青岛轮渡后
+                { name: '莱阳服务区', city: '烟台', distance: 60 },
+                { name: '莱西服务区', city: '青岛', distance: 50 },
+                { name: '胶州服务区', city: '青岛', distance: 30 },
+                { name: '日照服务区', city: '日照', distance: 50 },
+                // 江苏段
+                { name: '赣榆服务区', city: '连云港', distance: 60 },
+                { name: '灌云服务区', city: '连云港', distance: 40 },
+                { name: '响水服务区', city: '盐城', distance: 50 },
+                { name: '盐城服务区', city: '盐城', distance: 40 },
+                { name: '东台服务区', city: '盐城', distance: 60 },
+                { name: '海安服务区', city: '南通', distance: 40 },
+                { name: '如皋服务区', city: '南通', distance: 30 },
+                { name: '苏通大桥服务区', city: '苏州', distance: 50 },
+            ]
+        },
+        // 上海 → 沈阳（北行）
+        'G15_上海_沈阳': {
+            highway: 'G15',
+            name: '沈海高速',
+            direction: '沈阳方向',
+            cities: ['上海', '南通', '盐城', '连云港', '日照', '青岛', '烟台', '大连', '鞍山', '沈阳'],
+            serviceAreas: [
+                { name: '苏通大桥服务区', city: '苏州', distance: 50 },
+                { name: '如皋服务区', city: '南通', distance: 30 },
+                { name: '海安服务区', city: '南通', distance: 40 },
+                { name: '东台服务区', city: '盐城', distance: 60 },
+                { name: '盐城服务区', city: '盐城', distance: 40 },
+                { name: '响水服务区', city: '盐城', distance: 50 },
+                { name: '灌云服务区', city: '连云港', distance: 40 },
+                { name: '赣榆服务区', city: '连云港', distance: 60 },
+                { name: '日照服务区', city: '日照', distance: 50 },
+                { name: '胶州服务区', city: '青岛', distance: 30 },
+                { name: '莱西服务区', city: '青岛', distance: 50 },
+                { name: '莱阳服务区', city: '烟台', distance: 60 },
+                { name: '大连服务区', city: '大连', distance: 40 },
+                { name: '甘泉服务区', city: '鞍山', distance: 80 },
+                { name: '井泉服务区', city: '沈阳', distance: 30 },
+            ]
+        },
+
+        // ===== G4 京港澳高速 =====
+        // 北京 → 广州（南行）
+        'G4_北京_广州': {
+            highway: 'G4',
+            name: '京港澳高速',
+            direction: '广州方向',
+            cities: ['北京', '保定', '石家庄', '郑州', '武汉', '长沙', '广州'],
+            serviceAreas: [
+                // 河北段
+                { name: '涿州服务区', city: '保定', distance: 60 },
+                { name: '保定服务区', city: '保定', distance: 40 },
+                { name: '定州服务区', city: '保定', distance: 50 },
+                { name: '石家庄服务区', city: '石家庄', distance: 60 },
+                // 河南段
+                { name: '安阳服务区', city: '安阳', distance: 80 },
+                { name: '郑州服务区', city: '郑州', distance: 70 },
+                { name: '许昌服务区', city: '许昌', distance: 50 },
+                { name: '漯河服务区', city: '漯河', distance: 40 },
+                { name: '驻马店服务区', city: '驻马店', distance: 60 },
+                // 湖北段
+                { name: '孝感服务区', city: '孝感', distance: 80 },
+                { name: '武汉服务区', city: '武汉', distance: 50 },
+                { name: '咸宁服务区', city: '咸宁', distance: 60 },
+                // 湖南段
+                { name: '岳阳服务区', city: '岳阳', distance: 70 },
+                { name: '长沙服务区', city: '长沙', distance: 80 },
+                { name: '衡阳服务区', city: '衡阳', distance: 70 },
+                { name: '郴州服务区', city: '郴州', distance: 60 },
+                // 广东段
+                { name: '韶关服务区', city: '韶关', distance: 70 },
+                { name: '广州服务区', city: '广州', distance: 80 },
+            ]
+        },
+        // 广州 → 北京（北行）
+        'G4_广州_北京': {
+            highway: 'G4',
+            name: '京港澳高速',
+            direction: '北京方向',
+            cities: ['广州', '长沙', '武汉', '郑州', '石家庄', '保定', '北京'],
+            serviceAreas: [
+                { name: '广州服务区', city: '广州', distance: 80 },
+                { name: '韶关服务区', city: '韶关', distance: 70 },
+                { name: '郴州服务区', city: '郴州', distance: 60 },
+                { name: '衡阳服务区', city: '衡阳', distance: 70 },
+                { name: '长沙服务区', city: '长沙', distance: 80 },
+                { name: '岳阳服务区', city: '岳阳', distance: 70 },
+                { name: '咸宁服务区', city: '咸宁', distance: 60 },
+                { name: '武汉服务区', city: '武汉', distance: 50 },
+                { name: '孝感服务区', city: '孝感', distance: 80 },
+                { name: '驻马店服务区', city: '驻马店', distance: 60 },
+                { name: '漯河服务区', city: '漯河', distance: 40 },
+                { name: '许昌服务区', city: '许昌', distance: 50 },
+                { name: '郑州服务区', city: '郑州', distance: 70 },
+                { name: '安阳服务区', city: '安阳', distance: 80 },
+                { name: '石家庄服务区', city: '石家庄', distance: 60 },
+                { name: '定州服务区', city: '保定', distance: 50 },
+                { name: '保定服务区', city: '保定', distance: 40 },
+                { name: '涿州服务区', city: '保定', distance: 60 },
+            ]
+        },
+
+        // ===== G40 沪陕高速 =====
+        // 上海 → 西安（西行）
+        'G40_上海_西安': {
+            highway: 'G40',
+            name: '沪陕高速',
+            direction: '西安方向',
+            cities: ['上海', '南通', '扬州', '南京', '合肥', '信阳', '南阳', '西安'],
+            serviceAreas: [
+                // 江苏段
+                { name: '苏通大桥服务区', city: '苏州', distance: 40 },
+                { name: '大丰服务区', city: '盐城', distance: 60 },
+                { name: '东台服务区', city: '盐城', distance: 50 },
+                { name: '扬州服务区', city: '扬州', distance: 80 },
+                { name: '仪征服务区', city: '扬州', distance: 40 },
+                { name: '南京服务区', city: '南京', distance: 50 },
+                // 安徽段
+                { name: '合肥服务区', city: '合肥', distance: 60 },
+                { name: '六安服务区', city: '六安', distance: 50 },
+                { name: '叶集服务区', city: '六安', distance: 40 },
+                // 河南段
+                { name: '信阳服务区', city: '信阳', distance: 90 },
+                { name: '南阳服务区', city: '南阳', distance: 80 },
+                // 陕西段
+                { name: '商洛服务区', city: '商洛', distance: 70 },
+                { name: '西安服务区', city: '西安', distance: 60 },
+            ]
+        },
+        // 西安 → 上海（东行）
+        'G40_西安_上海': {
+            highway: 'G40',
+            name: '沪陕高速',
+            direction: '上海方向',
+            cities: ['西安', '南阳', '信阳', '合肥', '南京', '扬州', '南通', '上海'],
+            serviceAreas: [
+                { name: '西安服务区', city: '西安', distance: 60 },
+                { name: '商洛服务区', city: '商洛', distance: 70 },
+                { name: '南阳服务区', city: '南阳', distance: 80 },
+                { name: '信阳服务区', city: '信阳', distance: 90 },
+                { name: '六安服务区', city: '六安', distance: 50 },
+                { name: '合肥服务区', city: '合肥', distance: 60 },
+                { name: '南京服务区', city: '南京', distance: 50 },
+                { name: '仪征服务区', city: '扬州', distance: 40 },
+                { name: '扬州服务区', city: '扬州', distance: 80 },
+                { name: '东台服务区', city: '盐城', distance: 50 },
+                { name: '大丰服务区', city: '盐城', distance: 60 },
+                { name: '苏通大桥服务区', city: '苏州', distance: 40 },
+            ]
+        },
     },
 
     // 城市节点信息
     cities: {
         '上海': { region: '华东', desc: '东方明珠·上海', highways: ['G42', 'G2', 'G15', 'G40', 'G60'] },
-        '苏州': { region: '华东', desc: '园林之城·苏州', highways: ['G42', 'G2'] },
+        '苏州': { region: '华东', desc: '园林之城·苏州', highways: ['G42', 'G2', 'G15'] },
         '无锡': { region: '华东', desc: '太湖明珠·无锡', highways: ['G42', 'G2', 'S48'] },
         '常州': { region: '华东', desc: '龙城·常州', highways: ['G42'] },
         '镇江': { region: '华东', desc: '醋都·镇江', highways: ['G42'] },
@@ -211,6 +374,25 @@ const ROAD_NETWORK_DATA = {
         '宜兴': { region: '华东', desc: '陶都·宜兴', highways: ['G25', 'S48'] },
         '杭州': { region: '华东', desc: '人间天堂·杭州', highways: ['G25', 'G56', 'G60'] },
         '湖州': { region: '华东', desc: '太湖明珠·湖州', highways: ['G25', 'G50'] },
+        // 新增城市
+        '沈阳': { region: '东北', desc: '重工业基地·沈阳', highways: ['G1', 'G15'] },
+        '鞍山': { region: '东北', desc: '钢都·鞍山', highways: ['G15'] },
+        '大连': { region: '东北', desc: '浪漫之都·大连', highways: ['G15'] },
+        '烟台': { region: '华东', desc: '海滨城市·烟台', highways: ['G15', 'G18'] },
+        '青岛': { region: '华东', desc: '啤酒之城·青岛', highways: ['G15', 'G20'] },
+        '日照': { region: '华东', desc: '阳光海岸·日照', highways: ['G15'] },
+        '连云港': { region: '华东', desc: '亚欧桥头堡·连云港', highways: ['G15', 'G30'] },
+        '盐城': { region: '华东', desc: '湿地之都·盐城', highways: ['G15'] },
+        '南通': { region: '华东', desc: '江海之城·南通', highways: ['G15'] },
+        '保定': { region: '华北', desc: '首都南大门·保定', highways: ['G4'] },
+        '石家庄': { region: '华北', desc: '火车拉来的城市·石家庄', highways: ['G4', 'G5'] },
+        '郑州': { region: '华中', desc: '中原之城·郑州', highways: ['G4', 'G30'] },
+        '长沙': { region: '华中', desc: '星城·长沙', highways: ['G4', 'G60'] },
+        '广州': { region: '华南', desc: '花城·广州', highways: ['G4', 'G15', 'G80'] },
+        '信阳': { region: '华中', desc: '北国江南·信阳', highways: ['G4', 'G40'] },
+        '南阳': { region: '华中', desc: '诸葛亮故里·南阳', highways: ['G4', 'G55'] },
+        '西安': { region: '西北', desc: '历史古都·西安', highways: ['G5', 'G30', 'G40', 'G65'] },
+        '商洛': { region: '西北', desc: '戏剧之乡·商洛', highways: ['G40'] },
     },
 
     // 高速公路基本信息
@@ -223,6 +405,7 @@ const ROAD_NETWORK_DATA = {
         'G6': { name: '京藏高速', start: '北京', end: '拉萨' },
         'G15': { name: '沈海高速', start: '沈阳', end: '海口' },
         'G25': { name: '长深高速', start: '长春', end: '深圳' },
+        'G40': { name: '沪陕高速', start: '上海', end: '西安' },
         'G42': { name: '沪蓉高速', start: '上海', end: '成都' },
         'G50': { name: '沪渝高速', start: '上海', end: '重庆' },
         'G60': { name: '沪昆高速', start: '上海', end: '昆明' },
