@@ -1414,47 +1414,43 @@
       // ---- 第五阶段：迟延履行加倍利息 ----
       // 从计算起始日到截止日，按还款日期分段计算
       let accumulatedDelayed = 0;
+      const doubleSegments = []; // 记录分段详情用于显示
       if (includeDelayed) {
-        let delayedPrincipal = principal0;  // 迟延履行利息的剩余本金
-        let lastDelayedDate  = startDate;    // 迟延履行起算日
+        let delayedPrincipal = principal0;
+        let lastDelayedDate = startDate;
 
         for (const rep of repayments) {
           const repDate = rep.date;
-          // 迟延履行仅计算从起算日到截止日的区间
           const segStart = lastDelayedDate;
-          const segEnd   = repDate;
-          const segDays   = daysBetween(segStart, segEnd);
+          const segEnd = repDate;
+          const segDays = daysBetween(segStart, segEnd);
           if (segDays > 0) {
-            accumulatedDelayed += delayedPrincipal * delayedDailyRate * segDays;
+            const segInterest = delayedPrincipal * delayedDailyRate * segDays;
+            accumulatedDelayed += segInterest;
+            doubleSegments.push({ start: segStart, end: segEnd, days: segDays, principal: delayedPrincipal, interest: segInterest });
           }
 
-          // 模拟抵扣（与第三阶段一致）：费用→利息→本金
           let remaining = rep.amount;
-          // 扣费用（迟延履行期间费用不变）
           const usedFee = Math.min(totalFees, remaining);
           remaining -= usedFee;
-          // 扣一般利息
           const usedInt = Math.min(accumulatedInterest, remaining);
           remaining -= usedInt;
-          // 扣本金（迟延履行利息的计息基数随本金减少）
           const usedPrin = Math.min(delayedPrincipal, remaining);
           delayedPrincipal -= usedPrin;
 
           lastDelayedDate = repDate;
         }
 
-        // 末段迟延利息（从最后还款日到截止日）
-        const lastRepDate = repayments.length > 0
-          ? repayments[repayments.length - 1].date
-          : startDate;
+        const lastRepDate = repayments.length > 0 ? repayments[repayments.length - 1].date : startDate;
         const lastDelayedDays = daysBetween(lastRepDate, endDate0);
         if (lastDelayedDays > 0) {
-          accumulatedDelayed += delayedPrincipal * delayedDailyRate * lastDelayedDays;
+          const lastSegInterest = delayedPrincipal * delayedDailyRate * lastDelayedDays;
+          accumulatedDelayed += lastSegInterest;
+          doubleSegments.push({ start: lastRepDate, end: endDate0, days: lastDelayedDays, principal: delayedPrincipal, interest: lastSegInterest });
         }
       }
 
       // ---- 第六阶段：汇总结果 ----
-      // 执行款总额 = 剩余本金 + 累计一般债务利息 + 累计加倍利息 + 未付费用
       const total = remainingPrincipal + accumulatedInterest + accumulatedDelayed + remainingFees;
 
       return {
@@ -1465,7 +1461,8 @@
         finalDays,
         finalInterest,
         total,
-        steps
+        steps,
+        doubleSegments
       };
     }
 
@@ -1591,7 +1588,7 @@
         detailHtml += `期间: ${startDate} ~ ${endDate}（${daysBetween(startDate, endDate)}天）<br>`;
       }
       detailHtml += `年利率: ${annualRateDisplay}（日利率: ${dailyRateDisplay}）<br>`;
-      detailHtml += `<span class="formula">────── 第三阶段：逐笔还款处理 ──────</span><br>`;
+      detailHtml += `<span class="formula">────── 逐笔还款处理 ──────</span><br>`;
 
       if (item.steps.length === 0) {
         detailHtml += `<span style="font-size:11px;opacity:0.7;">（无还款记录，跳过）</span><br>`;
@@ -1610,7 +1607,7 @@
         }
       }
 
-      detailHtml += `<span class="formula">────── 第四阶段：末段利息 ──────</span><br>`;
+      detailHtml += `<span class="formula">────── 末段利息 ──────</span><br>`;
       if (item.finalDays > 0) {
         const finalRate = rateVal / 100 / 365;
         detailHtml += `<span class="formula">末段: ${formatMoney(item.remainingPrincipal)} × ${finalRate.toFixed(6)} × ${item.finalDays}天 = ${formatMoney(item.finalInterest)}</span><br>`;
@@ -1619,12 +1616,18 @@
       }
 
       if (includeDelayedInterest) {
-        detailHtml += `<span class="formula">────── 第五阶段：迟延履行加倍利息 ──────</span><br>`;
+        detailHtml += `<span class="formula">────── 迟延履行加倍利息 ──────</span><br>`;
         detailHtml += `<span class="formula">日利率: 0.000175（万分之一/天）</span><br>`;
+        // 显示分段计算明细
+        if (item.doubleSegments && item.doubleSegments.length > 0) {
+          for (const seg of item.doubleSegments) {
+            detailHtml += `<span class="formula">${seg.start} ~ ${seg.end}: ${formatMoney(seg.principal)} × 0.000175 × ${seg.days}天 = ${formatMoney(seg.interest)}</span><br>`;
+          }
+        }
         detailHtml += `累计加倍利息: ${formatMoney(item.accumulatedDelayed)}<br>`;
       }
 
-      detailHtml += `<span class="formula">────── 第六阶段：汇总 ──────</span><br>`;
+      detailHtml += `<span class="formula">────── 汇总结果 ──────</span><br>`;
       detailHtml += `剩余本金: ${formatMoney(item.remainingPrincipal)}<br>`;
       detailHtml += `一般利息: ${formatMoney(item.accumulatedInterest)}<br>`;
       if (includeDelayedInterest) {
